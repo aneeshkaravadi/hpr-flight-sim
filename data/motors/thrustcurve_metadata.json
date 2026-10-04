@@ -1,0 +1,35 @@
+{
+ "AeroTech_J420R": {
+  "designation": "J420R",
+  "totImpulseNs": 658,
+  "burnTimeS": 1.56666666666667,
+  "avgThrustN": 420,
+  "maxThrustN": null,
+  "totalWeightG": 649.6,
+  "propWeightG": 345,
+  "diameter": 38,
+  "length": 337
+ },
+ "AeroTech_H128W": {
+  "designation": "H128W",
+  "totImpulseNs": 172.9,
+  "burnTimeS": 1.27,
+  "avgThrustN": 128,
+  "maxThrustN": 168.7,
+  "totalWeightG": 206,
+  "propWeightG": 94.2,
+  "diameter": 29,
+  "length": 194
+ },
+ "AeroTech_I284W": {
+  "designation": "I284W",
+  "totImpulseNs": 607.3,
+  "burnTimeS": 1.94,
+  "avgThrustN": 284,
+  "maxThrustN": 570.6,
+  "totalWeightG": 555.52,
+  "propWeightG": 315.9,
+  "diameter": 38,
+  "length": 299
+ }
+}

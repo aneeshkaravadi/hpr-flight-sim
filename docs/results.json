@@ -1,0 +1,97 @@
+{
+  "baseline": {
+    "H128W": {
+      "apogee_m": 279.93,
+      "apogee_time": 7.86,
+      "max_speed": 73.44,
+      "max_mach": 0.22,
+      "rail_exit_speed": 16.67,
+      "max_accel_g": 8.33,
+      "landing_time": 45.26,
+      "margin_liftoff_cal": 2.9,
+      "margin_burnout_cal": 3.25
+    },
+    "I284W": {
+      "apogee_m": 1332.21,
+      "apogee_time": 15.13,
+      "max_speed": 214.44,
+      "max_mach": 0.63,
+      "rail_exit_speed": 25.09,
+      "max_accel_g": 18.35,
+      "landing_time": 92.22,
+      "margin_liftoff_cal": 1.97,
+      "margin_burnout_cal": 2.82
+    },
+    "J420R": {
+      "apogee_m": 1402.6,
+      "apogee_time": 15.33,
+      "max_speed": 238.01,
+      "max_mach": 0.7,
+      "rail_exit_speed": 26.89,
+      "max_accel_g": 21.6,
+      "landing_time": 94.58,
+      "margin_liftoff_cal": 1.81,
+      "margin_burnout_cal": 2.77
+    }
+  },
+  "weathercock": {
+    "H128W": {
+      "apogee_loss_pct_at_8ms": 3.0,
+      "rail_exit_aoa_deg_at_8ms": 20.6,
+      "upwind_apogee_drift_m_at_8ms": 46.0
+    },
+    "I284W": {
+      "apogee_loss_pct_at_8ms": 1.9,
+      "rail_exit_aoa_deg_at_8ms": 14.0,
+      "upwind_apogee_drift_m_at_8ms": 142.0
+    }
+  },
+  "rail_length_H128W_8ms": {
+    "4 ft": {
+      "exit_speed": 13.5,
+      "exit_aoa_deg": 23.6
+    },
+    "6 ft": {
+      "exit_speed": 16.7,
+      "exit_aoa_deg": 20.6
+    },
+    "8 ft": {
+      "exit_speed": 19.3,
+      "exit_aoa_deg": 18.7
+    }
+  },
+  "landing_m_at_8ms": {
+    "dual deploy (drogue, main at 150 m)": 791.0,
+    "main at apogee": 3423.0
+  },
+  "monte_carlo": {
+    "n": 300,
+    "uncalibrated": {
+      "p5": 1220,
+      "p50": 1332,
+      "p95": 1505,
+      "std": 87.6
+    },
+    "drag_calibrated": {
+      "p5": 1241,
+      "p50": 1321,
+      "p95": 1395,
+      "std": 48.6
+    },
+    "variance_share_uncalibrated": {
+      "drag": 0.68,
+      "dry mass": 0.02,
+      "motor impulse": 0.24,
+      "wind speed": 0.009,
+      "air temperature": 0.051
+    },
+    "variance_share_calibrated": {
+      "drag": 0.063,
+      "dry mass": 0.053,
+      "motor impulse": 0.677,
+      "wind speed": 0.027,
+      "air temperature": 0.178
+    },
+    "inputs": "drag x N(1, 0.10) [calibrated: 0.02]; dry mass x N(1, 0.02); impulse x N(1, 0.03); wind U(0, 8) m/s from a random direction; temperature ISA + N(0, 8) K"
+  }
+}

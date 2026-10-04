@@ -1,0 +1,108 @@
+# hpr-flight-sim
+
+[![tests](https://github.com/aneeshkaravadi/hpr-flight-sim/actions/workflows/ci.yml/badge.svg)](https://github.com/aneeshkaravadi/hpr-flight-sim/actions/workflows/ci.yml)
+
+A six-degree-of-freedom flight simulator for high-power rockets: certified thrust curves, Barrowman stability, wind, the launch rail, dual-deploy recovery, and a way to calibrate it against a real altimeter.
+
+<!-- TODO(Aneesh): photo of a club launch here, e.g.
+![Launch day](docs/photos/launch.jpg)
+-->
+
+## Why I built this
+
+I've designed rockets in OpenRocket, and as the person who led propulsion design for my high school's rocketry club I wanted to understand what actually happens inside the "simulate" button: why a rocket turns into the wind, why the stability margin changes during the flight, and how much to trust a predicted apogee. Writing my own simulator, and checking every piece against physics I could work out by hand, was how I got there.
+
+## What one flight looks like
+
+The example is a typical 3-inch dual-deploy rocket with a 38 mm motor mount, flown on three real AeroTech motors (certified thrust curves from thrustcurve.org).
+
+| Motor | Apogee | Max speed | Off the rail | Static margin, liftoff → burnout |
+|---|---|---|---|---|
+| H128W | 280 m | 73 m/s | 16.7 m/s | 2.9 → 3.3 cal |
+| I284W | 1,332 m | 214 m/s (Mach 0.63) | 25.1 m/s | 2.0 → 2.8 cal |
+| J420R | 1,403 m | 238 m/s (Mach 0.70) | 26.9 m/s | 1.8 → 2.8 cal |
+
+![Flight profiles](docs/figures/flight_profiles.png)
+
+The stability margin isn't one number. It climbs while the motor burns, because the propellant mass leaves from the back and the centre of gravity moves forward. It also climbs with speed, because the fins make more lift near Mach 0.7. Then it settles once the rocket slows down.
+
+<img src="docs/figures/stability_margin.png" width="60%">
+
+## What it taught me
+
+**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (2 to 3% lower at 8 m/s), but the I284W ends up 142 m upwind of the pad at apogee.
+
+![Weathercocking](docs/figures/weathercock.png)
+
+**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.4 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 790 m.
+
+![Landing dispersion](docs/figures/landing_dispersion.png)
+
+**After you calibrate drag, the motor is the biggest unknown.** I ran 300 flights per case with realistic scatter in drag, dry mass, motor impulse (±3%), wind and air temperature.
+- **With my drag model as-is**, the apogee spread is ±88 m (1σ), and 68% of that comes from not knowing the drag well enough.
+- **After calibrating drag** from one real flight (`examples/compare_flight.py`), the spread drops to ±49 m, and now 68% of what's left is the motor itself: no two reloads give exactly the same impulse, and no amount of calibration fixes that.
+
+![Monte Carlo](docs/figures/monte_carlo.png)
+
+<!-- TODO(Aneesh): once you have an altimeter log, add a section here, e.g.
+## Checking it against a real flight
+Run examples/compare_flight.py with your club rocket's TOML, motor and altimeter CSV (data/flights/), and show the overlay plot,
+the uncalibrated error and the fitted drag multiplier. Then predict a second flight on a different motor with that multiplier.
+-->
+
+## How I checked it
+
+There are 20 tests, and each compares against something worked out independently:
+- standard atmosphere tables
+- the published impulse of each motor
+- the rocket equation, with no gravity or drag
+- exact kinematics for a drag-free vertical flight, and the launch-rail exit speed (to 0.2%)
+- Barrowman's nose and fin results, including the quarter-chord CP of a rectangular fin
+- terminal velocity under the main parachute
+- the step size being converged
+
+The one I'm proudest of starts the rocket coasting with a small wobble. It checks that the angle of attack oscillates at the frequency, and decays at the rate, that linearized short-period theory predicts (within 2% and 10%). The derivation is in [DERIVATIONS.md](DERIVATIONS.md).
+
+## Using it on your own rocket
+
+1. Describe the rocket in a TOML file. [`rockets/example_3in.toml`](rockets/example_3in.toml) shows every field: nose shape, tube, fins, internal masses, motor.
+2. Put the motor's `.eng` file from thrustcurve.org in [`data/motors/`](data/motors/).
+3. Fly it:
+
+```python
+from hprsim import rocket, flight
+r = rocket.load("rockets/example_3in.toml")
+fl = flight.simulate(r, flight.Launch(wind_speed=5, wind_from_deg=200, rail_length=1.83))
+print(fl.apogee, fl.events["rail_exit_speed"], fl.events["landing_distance_m"])
+```
+
+After a flight, calibrate the drag against the altimeter with `examples/compare_flight.py` ([how](data/flights/README.md)).
+
+<!-- TODO(Aneesh): add your club rocket as rockets/<name>.toml (dimensions and masses from OpenRocket or a scale) and mention it here. -->
+
+## Running it
+
+```bash
+pip install -e ".[dev]"
+pytest -q                                          # 20 checks, ~6 s
+python examples/make_figures.py                    # every figure and number above
+python examples/make_figures.py --only weathercock # or just one section
+```
+
+`make_figures.py` runs about 650 simulations with a live progress bar. They run at the lowest CPU priority, two at a time by default, and you can press `+`/`-` to change how many run at once, `p` to pause, and `q` to stop.
+
+## Things I got wrong along the way
+
+- **My first Monte Carlo pushed my laptop to 110 °C.** It ran on all ten cores for three and a half minutes. When I profiled it, the drag model was re-integrating the nose cone's surface area about 18,000 times per flight, for a number that never changes. NumPy's general cross product was also slow on 3-element vectors, and the coast phase was using a smaller time step than it needed. Fixing those made each flight 4.3 times faster with the same apogee to the millimetre. That's also why the batch runner has a speed control now.
+- **I assumed Barrowman's "parabola" was the same shape as OpenRocket's "parabolic series".** It isn't. Barrowman's is $r \propto \sqrt{x}$, with its CP at half the nose length; the parabolic series has its CP at exactly 7/15 of the length, which my code got right while my test expected the wrong number.
+- **The rail-exit speed came out 1% too high,** because I recorded it at the end of the time step instead of interpolating to the exact moment the rocket left the rail.
+- **My first example rocket had a static margin of 3 to 4 calibers.** It was very stable, but it would weathercock a lot. Smaller fins brought it to about 2.
+- **I originally used the J350W.** Its curve on thrustcurve.org isn't marked public domain, so I switched to the J420R, which is the same case size with a similar impulse.
+
+## What's next
+
+See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): importing OpenRocket `.ork` files directly, transonic drag, body lift at higher angles of attack, and real flight comparisons.
+
+---
+
+Aneesh Karavadi, engineering at UNT (TAMS). I used Claude Code to write a lot of the implementation, but the questions, the checks and the conclusions are mine.

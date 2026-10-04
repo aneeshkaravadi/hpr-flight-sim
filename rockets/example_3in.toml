@@ -1,0 +1,40 @@
+# A typical 3-inch (78.7 mm OD) dual-deploy high-power rocket with a 38 mm motor mount.
+# Illustrative numbers in the range of common kits, NOT a specific kit or my club's rocket.
+# Stations are measured from the nose tip, in metres; masses in kg.
+name = "Example 3-inch dual-deploy rocket"
+roughness = 60e-6          # regular paint finish
+
+[nose]
+shape = "ogive"            # conical | ogive | vonkarman | parabolic
+length = 0.38
+mass = 0.25
+
+[body]
+diameter = 0.0787
+length = 1.20
+mass = 0.75
+
+[fins]
+count = 3
+root_chord = 0.14
+tip_chord = 0.05
+span = 0.065
+sweep = 0.085              # root leading edge to tip leading edge, along the body
+thickness = 0.003
+mass = 0.10
+
+[mass.recovery]            # drogue, main, shock cord, nomex
+mass = 0.40
+station = 0.55
+
+[mass.avionics]            # altimeter bay with batteries
+mass = 0.25
+station = 0.80
+
+[mass.motor_mount]         # motor tube, centering rings, retainer
+mass = 0.15
+station = 1.38
+
+[motor]
+file = "../data/motors/AeroTech_I284W.eng"
+overhang = 0.0             # how far the motor nozzle sticks out past the body end
