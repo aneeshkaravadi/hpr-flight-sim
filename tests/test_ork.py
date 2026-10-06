@@ -155,7 +155,21 @@ def test_imported_rocket_flies_and_round_trips_through_toml(tmp_path):
     r2 = rocket.load(toml, motor_file=I284W)
     assert r2.mass_props(0.0) == pytest.approx(r.mass_props(0.0), rel=1e-5)
     assert r2.stability(0.3) == pytest.approx(r.stability(0.3), rel=1e-5)
-    assert flight.Recovery.from_file(toml) == rec
+    assert vars(flight.Recovery.from_file(toml)) == pytest.approx(vars(rec), rel=1e-9)
+
+
+def test_single_parachute_at_apogee_survives_the_toml_round_trip(tmp_path):
+    single = DESIGN.replace("<deployevent>altitude</deployevent><deployaltitude>200</deployaltitude>",
+                            "<deployevent>apogee</deployevent>")
+    single = single[:single.index("<parachute>\n                <name>Drogue")] + single[single.index("</parachute>", single.index("<name>Drogue")) + len("</parachute>"):]
+    f = tmp_path / "single.ork"
+    f.write_text(single.replace("UPPER_OVERRIDE", "").replace("EXTRA", ""))
+    rec = flight.Recovery.from_file(f)
+    assert rec.drogue_cda is None and rec.main_altitude is None
+    toml = tmp_path / "single.toml"
+    toml.write_text(ork.to_toml(ork.read(f)))
+    back = flight.Recovery.from_file(toml)
+    assert not back.drogue_cda and back.main_altitude is None and back.main_cda == pytest.approx(rec.main_cda)
 
 
 def test_finds_the_motor_by_designation():

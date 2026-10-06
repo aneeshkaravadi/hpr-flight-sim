@@ -75,7 +75,10 @@ class Recovery:
             cfg = ork.read(path)
         else:
             cfg = tomllib.loads(path.read_text())
-        return cls(**cfg.get("recovery", {}))
+        rec = dict(cfg.get("recovery", {}))
+        if rec.get("main_altitude") == "apogee":
+            rec["main_altitude"] = None
+        return cls(**rec)
 
 
 @dataclass

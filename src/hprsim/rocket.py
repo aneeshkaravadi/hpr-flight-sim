@@ -248,6 +248,11 @@ class Rocket:
         return (cn_lin * xcp + cn_body * self.planform[1]) / (cn_lin + cn_body)
 
     # -- mass properties
+    def dry_mass_props(self):
+        """Mass and CG station without the motor."""
+        m, s1, *_ = self._dry
+        return m, s1 / m
+
     def mass_props(self, t: float):
         """Total mass, CG station, pitch inertia about the CG, roll inertia."""
         m, s1, s2, icm, iroll = self._dry

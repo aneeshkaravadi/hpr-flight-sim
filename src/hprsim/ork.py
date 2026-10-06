@@ -390,6 +390,28 @@ def read(path) -> dict:
     return cfg
 
 
+def stored_simulations(path) -> list[dict]:
+    """The simulation results OpenRocket saved in the file: motor, and every data column as an array."""
+    root = _parse(path)
+    out = []
+    for s in root.findall("simulations/simulation"):
+        db = s.find("flightdata/databranch")
+        if db is None:
+            continue
+        cid = s.findtext("conditions/configid")
+        mot = root.find(f".//motormount/motor[@configid='{cid}']")
+        types = db.get("types").split(",")
+        rows = [[float(v) if v not in ("NaN", "") else np.nan for v in p.text.split(",")] for p in db.findall("datapoint")]
+        data = dict(zip(types, np.array(rows, float).T)) if rows else {}
+        fd = s.find("flightdata")
+        out.append({"name": s.findtext("name"),
+                    "motor": mot.findtext("designation") if mot is not None else None,
+                    "motor_length": float(mot.findtext("length")) if mot is not None and mot.findtext("length") else None,
+                    "max_altitude": float(fd.get("maxaltitude")) if fd is not None and fd.get("maxaltitude") else None,
+                    "data": data})
+    return out
+
+
 def to_toml(cfg: dict) -> str:
     """Write a config from read() as a rocket TOML file."""
     def val(v):
@@ -399,14 +421,18 @@ def to_toml(cfg: dict) -> str:
             return '"' + v.replace('"', '\\"') + '"'
         if isinstance(v, bool):
             return "true" if v else "false"
-        return repr(float(v)) if isinstance(v, (float, np.floating)) else str(v)
+        return f"{float(v):.12g}" if isinstance(v, (float, np.floating)) else str(v)
 
     lines = [f"# Imported from OpenRocket: {cfg['name']}", f"name = {val(cfg['name'])}", f"roughness = {val(cfg['roughness'])}", ""]
-    for table in ("nose", "body", "fins", "motor", "recovery"):
+    rec = dict(cfg["recovery"])
+    if "drogue_cda" in rec and rec["drogue_cda"] is None:
+        rec["drogue_cda"] = 0.0  # no drogue
+    if "main_altitude" in rec and rec["main_altitude"] is None:
+        rec["main_altitude"] = "apogee"  # TOML has no null
+    for table, items in (("nose", cfg["nose"]), ("body", cfg["body"]), ("fins", cfg["fins"]), ("motor", cfg["motor"]),
+                         ("recovery", rec)):
         lines.append(f"[{table}]")
-        for k, v in cfg[table].items():
-            if val(v) is not None:
-                lines.append(f"{k} = {val(v)}")
+        lines += [f"{k} = {val(v)}" for k, v in items.items() if v is not None]
         lines.append("")
     for name, m in cfg["mass"].items():
         lines.append(f"[mass.{name}]")
