@@ -12,7 +12,7 @@
       "margin_burnout_cal": 3.25
     },
     "I284W": {
-      "apogee_m": 1332.21,
+      "apogee_m": 1332.23,
       "apogee_time": 15.13,
       "max_speed": 214.44,
       "max_mach": 0.63,
@@ -23,13 +23,13 @@
       "margin_burnout_cal": 2.82
     },
     "J420R": {
-      "apogee_m": 1402.6,
+      "apogee_m": 1402.63,
       "apogee_time": 15.33,
       "max_speed": 238.01,
       "max_mach": 0.7,
       "rail_exit_speed": 26.89,
       "max_accel_g": 21.6,
-      "landing_time": 93.46,
+      "landing_time": 93.47,
       "margin_liftoff_cal": 1.81,
       "margin_burnout_cal": 2.77
     }
@@ -43,7 +43,7 @@
     "I284W": {
       "apogee_loss_pct_at_8ms": 1.5,
       "rail_exit_aoa_deg_at_8ms": 14.0,
-      "upwind_apogee_drift_m_at_8ms": 104.0
+      "upwind_apogee_drift_m_at_8ms": 103.0
     }
   },
   "rail_length_H128W_8ms": {
@@ -61,8 +61,8 @@
     }
   },
   "landing_m_at_8ms": {
-    "dual deploy (drogue, main at 150 m)": 823.0,
-    "main at apogee": 3473.0
+    "dual deploy (drogue, main at 150 m)": 825.0,
+    "main at apogee": 3474.0
   },
   "monte_carlo": {
     "n": 300,
@@ -76,13 +76,13 @@
       "p5": 1244,
       "p50": 1323,
       "p95": 1396,
-      "std": 48.3
+      "std": 48.2
     },
     "variance_share_uncalibrated": {
       "drag": 0.683,
       "dry mass": 0.021,
       "motor impulse": 0.24,
-      "wind speed": 0.006,
+      "wind speed": 0.005,
       "air temperature": 0.052
     },
     "variance_share_calibrated": {
@@ -96,11 +96,11 @@
   },
   "altitude_thrust": {
     "apogee_m_as_certified": {
-      "0": 1319.9,
-      "500": 1350.8,
+      "0": 1320.0,
+      "500": 1350.9,
       "1000": 1382.4,
       "1500": 1414.7,
-      "2000": 1447.6
+      "2000": 1447.7
     },
     "apogee_gain_pct": {
       "12mm": {

@@ -163,7 +163,7 @@ def main():
         axm.set_xlabel("time (s)")
         axm.set_ylabel("static margin (calibers)")
         axm.set_title("Margin rises as propellant burns (CG moves forward)\n"
-                      "and with speed (fins lift more near Mach 0.7), then settles", fontsize=10)
+                      "and a little with speed (fins lift slightly more near Mach 0.7)", fontsize=10)
         axm.legend(fontsize=8)
         save(fig2, "stability_margin.png")
 

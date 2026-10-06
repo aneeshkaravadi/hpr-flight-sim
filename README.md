@@ -24,21 +24,21 @@ The example is a typical 3-inch dual-deploy rocket with a 38 mm motor mount, flo
 
 ![Flight profiles](docs/figures/flight_profiles.png)
 
-The stability margin isn't one number. It climbs while the motor burns, because the propellant mass leaves from the back and the center of gravity moves forward. It also climbs with speed, because the fins make more lift near Mach 0.7. Then it settles once the rocket slows down.
+The stability margin isn't one number. It climbs while the motor burns, because the propellant mass leaves from the back and the center of gravity moves forward. It also rises a little with speed, because the fins make slightly more lift near Mach 0.7, and settles back as the rocket slows down.
 
 <img src="docs/figures/stability_margin.png" width="60%">
 
 ## What it taught me
 
-**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (1.5 to 2.5% lower at 8 m/s), but the I284W ends up 104 m upwind of the pad at apogee.
+**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (1.5 to 2.5% lower at 8 m/s), but the I284W ends up 103 m upwind of the pad at apogee.
 
 ![Weathercocking](docs/figures/weathercock.png)
 
-**A 2-caliber margin is a small-angle number.** Barrowman's method treats normal force as linear in the angle of attack and leaves out the body tube's own lift, which grows as sin²α. That's fine in steady flight, but not for a rocket leaving a short rail in wind at 14 to 21°. With Galejs' body-lift correction, the I284W's 2.0-caliber margin at liftoff drops to 0.6 at 10° and almost nothing at 20°, and on the J420R it goes slightly negative. The body lift acts ahead of the CG, so the simulator, which includes it, also shows the rocket turning into the wind less than plain Barrowman predicts: 104 m upwind at apogee instead of 142 m.
+**A 2-caliber margin is a small-angle number.** Barrowman's method treats normal force as linear in the angle of attack and leaves out the body tube's own lift, which grows as sin²α. That's fine in steady flight, but not for a rocket leaving a short rail in wind at 14 to 21°. With Galejs' body-lift correction, the I284W's 2.0-caliber margin at liftoff drops to 0.6 at 10° and almost nothing at 20°, and on the J420R it goes slightly negative. The body lift acts ahead of the CG, so the simulator, which includes it, also shows the rocket turning into the wind less than plain Barrowman predicts: 103 m upwind at apogee instead of 142 m.
 
 <img src="docs/figures/margin_vs_aoa.png" width="60%">
 
-**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.5 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 820 m.
+**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.5 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 825 m.
 
 ![Landing dispersion](docs/figures/landing_dispersion.png)
 
@@ -64,20 +64,34 @@ the uncalibrated error and the fitted drag multiplier. Then predict a second fli
 
 ## How I checked it
 
-There are 20 tests, and each compares against something worked out independently:
+There are 41 tests, and each compares against something worked out independently:
 - standard atmosphere tables
 - the published impulse of each motor
 - the rocket equation, with no gravity or drag
 - exact kinematics for a drag-free vertical flight, and the launch-rail exit speed (to 0.2%)
-- Barrowman's nose and fin results, including the quarter-chord CP of a rectangular fin
+- Barrowman's nose and fin results, including the quarter-chord CP of a rectangular fin, and the CP of every nose shape from its volume
+- the extra speed from pressure thrust at altitude
+- the closed-form opening shock of a filling parachute
 - terminal velocity under the main parachute
+- masses and positions of an OpenRocket design worked out by hand
 - the step size being converged
 
 The one I'm proudest of starts the rocket coasting with a small wobble. It checks that the angle of attack oscillates at the frequency, and decays at the rate, that linearized short-period theory predicts (within 2% and 10%). The derivation is in [DERIVATIONS.md](DERIVATIONS.md).
 
+### Against OpenRocket
+
+OpenRocket saves its simulation results inside each design file, so I imported one of its own bundled examples ("Dual parachute deployment", which ships with OpenRocket and isn't included here) and compared:
+- **Dry mass:** 1.3608 kg against OpenRocket's 1.3610.
+- **Dry CG:** within 2 mm.
+- **CP:** at 1,335 flight points, mine is within 1 mm of OpenRocket's up to Mach 0.6 (0.66 mm RMS overall). OpenRocket stores positions to the millimeter, so that's as close as the data can show. Above Mach 0.6 the two drift apart by up to 5 mm, where both are stretching subsonic theory.
+
+`examples/compare_openrocket.py` runs the same check on any .ork that has saved simulations.
+
+<img src="docs/figures/openrocket_cp.png" width="60%">
+
 ## Using it on your own rocket
 
-1. Describe the rocket in a TOML file. [`rockets/example_3in.toml`](rockets/example_3in.toml) shows every field: nose shape, tube, fins, internal masses, motor.
+1. Describe the rocket in a TOML file. [`rockets/example_3in.toml`](rockets/example_3in.toml) shows every field: nose shape, tube, fins, internal masses, motor. If you already have it in OpenRocket, `rocket.load("my_rocket.ork")` reads the design directly, or `examples/import_ork.py` writes it out as a TOML you can edit. That works for single-stage rockets with one fin set and no diameter changes.
 2. Put the motor's `.eng` file from thrustcurve.org in [`data/motors/`](data/motors/). If you measure the nozzle exit with calipers, add `nozzle_exit_diameter` under `[motor]` to include the extra thrust at altitude.
 3. Fly it:
 
@@ -96,7 +110,7 @@ After a flight, calibrate the drag against the altimeter with `examples/compare_
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                                          # 20 checks, ~6 s
+pytest -q                                          # 41 checks, ~15 s
 python examples/make_figures.py                    # every figure and number above
 python examples/make_figures.py --only weathercock # or just one section
 ```
@@ -105,15 +119,16 @@ python examples/make_figures.py --only weathercock # or just one section
 
 ## Things I got wrong along the way
 
-- **My first Monte Carlo pushed my laptop to 110 °C.** It ran on all ten cores for three and a half minutes. When I profiled it, the drag model was re-integrating the nose cone's surface area about 18,000 times per flight, for a number that never changes. NumPy's general cross product was also slow on 3-element vectors, and the coast phase was using a smaller time step than it needed. Fixing those made each flight 4.3 times faster with the same apogee to the millimetre. That's also why the batch runner has a speed control now.
+- **My first Monte Carlo pushed my laptop to 110 °C.** It ran on all ten cores for three and a half minutes. When I profiled it, the drag model was re-integrating the nose cone's surface area about 18,000 times per flight, for a number that never changes. NumPy's general cross product was also slow on 3-element vectors, and the coast phase was using a smaller time step than it needed. Fixing those made each flight 4.3 times faster with the same apogee to the millimeter. That's also why the batch runner has a speed control now.
 - **I assumed Barrowman's "parabola" was the same shape as OpenRocket's "parabolic series".** It isn't. Barrowman's is $r \propto \sqrt{x}$, with its CP at half the nose length; the parabolic series has its CP at exactly 7/15 of the length, which my code got right while my test expected the wrong number.
 - **The rail-exit speed came out 1% too high,** because I recorded it at the end of the time step instead of interpolating to the exact moment the rocket left the rail.
 - **My first example rocket had a static margin of 3 to 4 calibers.** It was very stable, but it would weathercock a lot. Smaller fins brought it to about 2.
+- **My fins gained too much lift with speed.** I'd divided the whole fin lift slope by the Prandtl-Glauert factor. When I imported one of OpenRocket's own examples and compared against the CP it had saved, mine sat 8 to 13 mm too far aft above Mach 0.3. Diederich's form, which OpenRocket uses, puts the compressibility inside the aspect-ratio term instead, and now the two agree to within a millimeter. The same comparison caught my nose surface integral overcounting by 0.05%.
 - **I originally used the J350W.** Its curve on thrustcurve.org isn't marked public domain, so I switched to the J420R, which is the same case size with a similar impulse.
 
 ## What's next
 
-See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): importing OpenRocket `.ork` files directly, transonic drag, roll and fin cant, and real flight comparisons.
+See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): transonic drag, roll and fin cant, and real flight comparisons.
 
 ---
 

@@ -69,7 +69,11 @@ acting at the centroid of the side-view (planform) area of the nose and body. Th
 
 Checked by: a cone's planform is a triangle, with area $RL$ and centroid at $\tfrac23 L$ (`test_cone_planform_area_and_centroid`). The force and moment the flight code applies match the formula (`test_body_lift_force_and_moment_follow_galejs`).
 
-**Compressibility.** The fin slope is multiplied by $1/\sqrt{1 - M^2}$ (Prandtl–Glauert), capped at $M = 0.8$. That's why the static margin rises near max speed.
+**Compressibility.** Speed enters the fin slope through the effective aspect ratio (Diederich's semi-empirical form, which OpenRocket also uses):
+
+$$C_{N\alpha,f} = \left(1 + \frac{R}{s + R}\right)\frac{4n(s/d)^2}{1 + \sqrt{1 + \left(\beta\dfrac{2L_F}{C_r + C_t}\right)^2}}, \qquad \beta = \sqrt{1 - M^2}$$
+
+This is capped at $M = 0.8$. It grows much less with speed than dividing the whole slope by $\beta$ (Prandtl–Glauert), which is what I did at first. That overstated the fins' lift above Mach 0.3, and the OpenRocket comparison in section 10 is what showed it (`test_fin_slope_compressibility_acts_through_the_aspect_ratio`).
 
 **Total CP and static margin:**
 
@@ -163,6 +167,22 @@ $n$ depends on the canopy type. It is an assumption here (8 by default), which i
 2. Fit a linear regression.
 3. Each coefficient squared is roughly that input's share of the apogee variance.
 
+## 10. Importing OpenRocket designs (`ork.py`)
+
+An .ork file is XML (zipped by newer OpenRocket versions, gzipped by older ones). Each part's position is given relative to its parent: from the parent's top, its bottom, its middle, right after the previous part, or absolute. Masses are computed the way OpenRocket does:
+
+| Part | Mass |
+|---|---|
+| nose cone | shell area × wall thickness × density |
+| tubes, couplers, inner tubes | annulus area × length × density |
+| bulkheads, centering rings | disc or ring area × length × density |
+| fins | (planform + tab area) × thickness × density × count |
+| parachutes | cloth area × surface density, plus the shroud lines |
+
+Mass overrides in the file are then applied. An override that covers subcomponents scales the whole subtree, which keeps its CG. Each internal part becomes a point mass at its own CG, carrying its own inertia.
+
+Checked against a design whose masses and positions are worked out by hand (`tests/test_ork.py`). On one of OpenRocket's own example rockets, the result agrees with the dry mass, CG and CP that OpenRocket saved (README, "Against OpenRocket").
+
 ## Limitations
 
 - Subsonic only. There is no transonic drag rise.
@@ -171,3 +191,4 @@ $n$ depends on the canopy type. It is an assumption here (8 by default), which i
 - Parachute filling is a simple model: drag area grows with distance squared, and the fill constant is an assumption.
 - Wind is a steady power-law profile with no gusts.
 - The example rocket's dimensions are representative of 3-inch kits. They aren't a specific kit.
+- The .ork import handles single-stage rockets with one fin set and no transitions.
