@@ -44,7 +44,7 @@ class Motor:
         self._I = np.r_[0.0, np.cumsum(0.5 * (self.F[1:] + self.F[:-1]) * dt)]
 
     @classmethod
-    def from_eng(cls, path: str | Path) -> "Motor":
+    def from_eng(cls, path: str | Path) -> Motor:
         lines = [ln.strip() for ln in Path(path).read_text().splitlines()]
         lines = [ln for ln in lines if ln and not ln.startswith(";")]
         name, dia_mm, len_mm, _delays, prop_kg, total_kg, *_maker = lines[0].split()

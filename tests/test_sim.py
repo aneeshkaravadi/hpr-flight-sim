@@ -1,5 +1,6 @@
 """Every test compares against an answer worked out independently of the simulator."""
 import json
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -264,7 +265,7 @@ def test_pitch_oscillation_frequency_and_damping():
     omega_d = np.sqrt(K / I + c_aero * Z / I - sigma**2)
     assert period == pytest.approx(2 * np.pi / omega_d, rel=0.02)
 
-    peaks = [np.abs(aoa[a:b]).max() for a, b in zip(crossings[:-1], crossings[1:])]
+    peaks = [np.abs(aoa[a:b]).max() for a, b in pairwise(crossings)]
     decay = np.log(peaks[0] / peaks[4]) / (4 * period / 2)
     assert decay == pytest.approx(sigma, rel=0.1)
 
@@ -357,7 +358,7 @@ def test_drag_calibration_recovers_a_known_multiplier(tmp_path):
     log = tmp_path / "flight.csv"
     rows = ["Time (s),Altitude (ft)"] + [f"{t:.3f},{z / calibrate.FT:.2f}" for t, z in zip(truth.t, truth.pos[:, 2])]
     log.write_text("\n".join(rows))
-    t, alt = calibrate.read_altitude_log(log)
+    _, alt = calibrate.read_altitude_log(log)
     assert alt.max() == pytest.approx(truth.apogee, rel=1e-4)
     scale = calibrate.fit_cd_scale(lambda s: rocket.load(ROCKET, cd_scale=s), launch, float(alt.max()))
     assert scale == pytest.approx(1.15, rel=5e-3)

@@ -24,7 +24,6 @@ import numpy as np
 
 from .motor import Motor
 
-
 # ---------------------------------------------------------------- components
 
 @dataclass
@@ -84,7 +83,7 @@ class NoseCone:
 
     @cached_property
     def wetted_area(self) -> float:
-        x, r, ds = self._profile()
+        _, r, ds = self._profile()
         return float(np.sum(2 * np.pi * r * ds))
 
     @cached_property

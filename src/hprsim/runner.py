@@ -9,6 +9,7 @@ prints a progress line every few seconds instead.
 """
 from __future__ import annotations
 
+import math
 import os
 import select
 import sys
@@ -16,9 +17,10 @@ import termios
 import time
 import tty
 from collections import deque
+from collections.abc import Callable, Iterable
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from contextlib import contextmanager
-from typing import Any, Callable, Iterable
+from typing import Any
 
 
 def _low_priority():
@@ -52,9 +54,9 @@ def _keyboard(enabled: bool):
 
 
 def _fmt(seconds: float) -> str:
-    if seconds != seconds or seconds == float("inf"):
+    if not math.isfinite(seconds):
         return "--"
-    seconds = int(round(seconds))
+    seconds = round(seconds)
     return f"{seconds // 60}m{seconds % 60:02d}s" if seconds >= 60 else f"{seconds}s"
 
 

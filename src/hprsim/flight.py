@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import tomllib
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -242,7 +243,7 @@ def descend(launch: Launch, recovery: Recovery, m: float, t: float, y: np.ndarra
     while True:
         filling = yd[6] < fill
         h = dt_fill if filling else dt
-        y_new = _rk4(lambda tt, yy: _deriv_descent(launch, m, cda_of, tt, yy), t, yd, h)
+        y_new = _rk4(partial(_deriv_descent, launch, m, cda_of), t, yd, h)
         if filling:
             air = isa(launch.site_elevation + y_new[2], launch.dT)
             v_air = y_new[3:6] - launch.wind(y_new[2])

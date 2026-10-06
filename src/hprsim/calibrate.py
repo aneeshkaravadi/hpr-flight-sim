@@ -8,8 +8,8 @@ the next flight on a different motor. That cross-prediction is the honest test.
 from __future__ import annotations
 
 import csv
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 from scipy.optimize import brentq
