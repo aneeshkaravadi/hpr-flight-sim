@@ -140,4 +140,4 @@ See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): the n
 
 ---
 
-Aneesh Karavadi, engineering at UNT (TAMS). I used Claude Code to write a lot of the implementation, but the questions, the checks and the conclusions are mine.
+Aneesh Karavadi, dual-enrolled engineering student at UNT through TAMS. I used Claude Code to write a lot of the implementation, but the questions, the checks and the conclusions are mine.
