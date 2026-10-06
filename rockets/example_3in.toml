@@ -22,6 +22,7 @@ span = 0.065
 sweep = 0.085              # root leading edge to tip leading edge, along the body
 thickness = 0.003
 mass = 0.10
+cross_section = "rounded"  # square | rounded | airfoil (sets the edge drag)
 
 [mass.recovery]            # drogue, main, shock cord, nomex
 mass = 0.40

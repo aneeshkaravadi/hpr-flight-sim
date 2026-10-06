@@ -137,6 +137,11 @@ class FinSet:
     station: float  # root leading edge
     body_diameter: float
     cant: float = 0.0  # rad, each fin's cant angle; positive spins the rocket positively about its nose axis
+    cross_section: str = "rounded"  # "square", "rounded" or "airfoil" (sets the edge drag)
+
+    def __post_init__(self):
+        if self.cross_section not in ("square", "rounded", "airfoil"):
+            raise ValueError(f"fin cross_section must be square, rounded or airfoil, not {self.cross_section!r}")
 
     @property
     def mid_chord_length(self) -> float:
@@ -354,7 +359,8 @@ def from_config(cfg: dict, base_dir: Path, motor: Motor | None = None, motor_fil
     f = cfg["fins"]
     fin_station = nose.length + body.length - f["root_chord"] - f.get("aft_offset", 0.0)
     fins = FinSet(f["count"], f["root_chord"], f["tip_chord"], f["span"], f["sweep"], f["thickness"], f["mass"],
-                  fin_station, d, cant=np.radians(f.get("cant_deg", 0.0)))
+                  fin_station, d, cant=np.radians(f.get("cant_deg", 0.0)),
+                  cross_section=f.get("cross_section", "rounded"))
     masses = [PointMass(k, v["mass"], v["station"], v.get("inertia", 0.0), v.get("roll_inertia", 0.0))
               for k, v in cfg.get("mass", {}).items()]
     mcfg = cfg["motor"]

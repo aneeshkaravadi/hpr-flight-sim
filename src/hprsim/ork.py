@@ -288,7 +288,9 @@ class _Reader:
         s, xt, t = float(c.findtext("height")), float(c.findtext("sweeplength")), float(c.findtext("thickness"))
         tab = float(c.findtext("tabheight") or 0.0) * float(c.findtext("tablength") or 0.0)
         m = _density(c) * n * t * (s * (Cr + Ct) / 2 + tab)
-        self.fins = {"count": n, "root_chord": Cr, "tip_chord": Ct, "span": s, "sweep": xt, "thickness": t, "station": x}
+        xs = (c.findtext("crosssection") or "square").strip().lower()
+        self.fins = {"count": n, "root_chord": Cr, "tip_chord": Ct, "span": s, "sweep": xt, "thickness": t, "station": x,
+                     "cross_section": xs if xs in ("square", "rounded", "airfoil") else "square"}
         x_bar = (Cr**2 + Cr * Ct + Ct**2 + xt * (Cr + 2 * Ct)) / (3 * (Cr + Ct))
         self.parts.append(Part(c.findtext("name") or "fins", "fins", m, x + x_bar))
 
@@ -343,7 +345,7 @@ class _Reader:
             "body": {"diameter": 2 * self.radius, "length": body_len, "mass": 0.0},
             "fins": {"count": f["count"], "root_chord": f["root_chord"], "tip_chord": f["tip_chord"],
                      "span": f["span"], "sweep": f["sweep"], "thickness": f["thickness"], "mass": fins.mass,
-                     "aft_offset": self.length - f["root_chord"] - f["station"]},
+                     "aft_offset": self.length - f["root_chord"] - f["station"], "cross_section": f["cross_section"]},
             "mass": masses,
             "motor": self._motor(),
             "recovery": self._recovery(),

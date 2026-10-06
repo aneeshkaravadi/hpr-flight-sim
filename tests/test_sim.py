@@ -173,6 +173,27 @@ def test_example_rocket_is_stable_and_margin_grows_during_burn():
     assert 1.0 < r.static_margin(0.0) < r.static_margin(r.motor.burn_time + 1)
 
 
+def test_drag_pieces_join_up_across_mach_one():
+    """Each piecewise formula should (nearly) meet itself where the pieces change."""
+    below, above = 1 - 1e-9, 1 + 1e-9
+    assert aero.base_drag_coefficient(below) == pytest.approx(aero.base_drag_coefficient(above), rel=1e-6)
+    assert aero.rounded_edge_drag_coefficient(below) == pytest.approx(aero.rounded_edge_drag_coefficient(above), rel=1e-4)
+    assert aero.rounded_edge_drag_coefficient(0.9 - 1e-9) == pytest.approx(aero.rounded_edge_drag_coefficient(0.9), abs=2e-3)
+    assert aero.stagnation_drag_coefficient(below) == pytest.approx(aero.stagnation_drag_coefficient(above), rel=6e-3)
+    assert aero.base_drag_coefficient(2.0) == pytest.approx(0.125)
+
+
+def test_square_fin_edges_by_hand():
+    """Square edges: stagnation drag on the leading edge (times cos^2 of the sweep) plus base drag on the trailing one."""
+    r = rocket.load(ROCKET)
+    r.fins.cross_section = "square"
+    M, f = 0.5, r.fins
+    edge = f.count * f.thickness * f.span / r.ref_area
+    sweep = np.arctan2(f.sweep, f.span)
+    by_hand = (0.85 * (1 + M**2 / 4 + M**4 / 40) * np.cos(sweep) ** 2 + (0.12 + 0.13 * M**2)) * edge
+    assert aero.drag_components(r, M, 1e7, False)["fin_edges"] == pytest.approx(by_hand, rel=1e-12)
+
+
 def test_example_drag_is_in_the_usual_range():
     """Typical subsonic HPR drag coefficients from OpenRocket are about 0.4-0.6."""
     r = rocket.load(ROCKET)

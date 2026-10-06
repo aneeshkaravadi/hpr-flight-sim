@@ -118,6 +118,7 @@ def test_import_matches_hand_calculation(tmp_path):
     f = cfg["fins"]
     assert f["mass"] == pytest.approx(1500 * 3 * 0.003 * 0.08 * (0.12 + 0.06) / 2)
     assert f["aft_offset"] == pytest.approx(0.0, abs=1e-12)  # flush with the aft end
+    assert f["cross_section"] == "square"  # OpenRocket's default when the file doesn't say
     assert cfg["motor"] == {"aft_station": pytest.approx(1.51), "designation": "I284W", "manufacturer": "AeroTech"}
     rec = cfg["recovery"]
     assert rec["main_cda"] == pytest.approx(1.5 * np.pi * 1.2**2 / 4)
