@@ -44,6 +44,10 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 ![Monte Carlo](docs/figures/monte_carlo.png)
 
+**A high launch site helps mostly through drag, not thrust.** Thrust curves are measured on a test stand near sea level. Higher up, the nozzle pushes against thinner air, so it makes a little more thrust. Moving the I284W flight from sea level to a 2,000 m site raises apogee about 10% just from the thinner air. The extra pressure thrust adds only another 1 to 3%, depending on the nozzle exit size: I swept 12 to 20 mm, because a .eng file doesn't say.
+
+<img src="docs/figures/altitude_thrust.png" width="60%">
+
 <!-- TODO(Aneesh): once you have an altimeter log, add a section here, e.g.
 ## Checking it against a real flight
 Run examples/compare_flight.py with your club rocket's TOML, motor and altimeter CSV (data/flights/), and show the overlay plot,
@@ -66,7 +70,7 @@ The one I'm proudest of starts the rocket coasting with a small wobble. It check
 ## Using it on your own rocket
 
 1. Describe the rocket in a TOML file. [`rockets/example_3in.toml`](rockets/example_3in.toml) shows every field: nose shape, tube, fins, internal masses, motor.
-2. Put the motor's `.eng` file from thrustcurve.org in [`data/motors/`](data/motors/).
+2. Put the motor's `.eng` file from thrustcurve.org in [`data/motors/`](data/motors/). If you measure the nozzle exit with calipers, add `nozzle_exit_diameter` under `[motor]` to include the extra thrust at altitude.
 3. Fly it:
 
 ```python

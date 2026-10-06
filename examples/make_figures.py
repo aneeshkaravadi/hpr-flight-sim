@@ -6,7 +6,7 @@
 
 Every simulation goes through hprsim.runner: one progress bar for the whole job,
 lowest CPU priority, and + / - keys to change how many run at once while it goes.
-Sections: thrust, baseline, weathercock, landing, montecarlo.
+Sections: thrust, baseline, weathercock, landing, montecarlo, altitude.
 """
 from __future__ import annotations
 
@@ -27,7 +27,9 @@ FIG = ROOT / "docs" / "figures"
 RESULTS = ROOT / "docs" / "results.json"
 ROCKET = ROOT / "rockets" / "example_3in.toml"
 MOTORS = {name: ROOT / "data" / "motors" / f"AeroTech_{name}.eng" for name in ("H128W", "I284W", "J420R")}
-SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo")
+SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude")
+SITES = (0.0, 500.0, 1000.0, 1500.0, 2000.0)  # launch site elevation, m
+EXITS = (0.0, 0.012, 0.016, 0.020)  # nozzle exit diameter, m (0 = curve as certified)
 WINDS = np.arange(0, 10.1, 1.0)
 RAILS = {"4 ft": 1.22, "6 ft": 1.83, "8 ft": 2.44}
 plt.rcParams.update({"figure.dpi": 140, "axes.grid": True, "grid.alpha": 0.3, "axes.spines.top": False,
@@ -38,6 +40,7 @@ def fly(spec: dict) -> dict:
     """One simulation described by a plain dict (so it can be sent to a worker process)."""
     mot = motor.Motor.from_eng(MOTORS[spec["motor"]])
     mot.impulse_scale = spec.get("impulse_scale", 1.0)
+    mot.exit_area = np.pi * spec.get("exit_diameter", 0.0) ** 2 / 4
     r = rocket.load(ROCKET, motor=mot, cd_scale=spec.get("cd_scale", 1.0),
                     dry_mass_scale=spec.get("dry_mass_scale", 1.0))
     fl = flight.simulate(r, flight.Launch(**spec.get("launch", {})), flight.Recovery(**spec.get("recovery", {})),
@@ -104,6 +107,9 @@ def main():
     if "montecarlo" in only:
         jobs["mc_raw"], mc_raw_in = monte_carlo_specs(args.mc, 0.10, seed=1)
         jobs["mc_cal"], mc_cal_in = monte_carlo_specs(args.mc, 0.02, seed=2)
+    if "altitude" in only:
+        jobs["altitude"] = [{"motor": "I284W", "ascent_only": True, "exit_diameter": d,
+                             "launch": {"site_elevation": h}} for h in SITES for d in EXITS]
     flat = [s for v in jobs.values() for s in v]
     out = runner.run(fly, flat, workers=args.workers) if flat else []
     if any(o is None for o in out):
@@ -241,6 +247,24 @@ def main():
         axes[1].set_title("Where the uncertainty comes from", fontsize=10)
         fig.suptitle(f"I284W, {args.mc} simulated flights per case", fontsize=10)
         save(fig, "monte_carlo.png")
+
+    # ---- 6. thrust gained at altitude
+    if "altitude" in only:
+        ap = np.array([o["events"]["apogee_m"] for o in res["altitude"]]).reshape(len(SITES), len(EXITS))
+        gain = 100 * (ap / ap[:, :1] - 1)  # vs. the as-certified curve at the same site
+        fig, ax = plt.subplots(figsize=(6.5, 3.8))
+        for j, d in enumerate(EXITS[1:], start=1):
+            ax.plot(SITES, gain[:, j], "o-", label=f"nozzle exit {1000 * d:.0f} mm")
+        ax.set_xlabel("launch site elevation (m)")
+        ax.set_ylabel("apogee gain from pressure thrust (%)")
+        ax.set_title("I284W: thrust curves are measured near sea level;\n"
+                     "higher up the nozzle pushes against thinner air", fontsize=10)
+        ax.legend(fontsize=8)
+        save(fig, "altitude_thrust.png")
+        results["altitude_thrust"] = {
+            "apogee_m_as_certified": {f"{h:.0f}": round(float(a), 1) for h, a in zip(SITES, ap[:, 0])},
+            "apogee_gain_pct": {f"{1000 * d:.0f}mm": {f"{h:.0f}": round(float(g), 2) for h, g in zip(SITES, gain[:, j])}
+                                for j, d in enumerate(EXITS) if d > 0}}
 
     RESULTS.write_text(json.dumps(results, indent=2))
     print(f"updated: {', '.join(sorted(only))}  ->  {RESULTS.relative_to(ROOT)}")

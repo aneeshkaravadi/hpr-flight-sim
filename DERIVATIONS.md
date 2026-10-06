@@ -22,6 +22,14 @@ That makes the effective exhaust velocity $c$ constant, which is the same assump
 
 Checked by: the mass flow integrates to exactly the propellant loaded, and the burnout speed with no gravity or drag matches the rocket equation, $\Delta v = c\ln(m_0/m_f)$ (`test_burnout_speed_matches_rocket_equation`).
 
+**Thrust at altitude.** The curve is measured on a static stand near sea level. Thrust is $F = \dot m v_e + (p_e - p_a)A_e$, and only the last term depends on where the rocket is. Relative to the test stand,
+
+$$F(p_a) = F_\text{curve} + (p_\text{ref} - p_a)A_e$$
+
+with $p_\text{ref}$ = 101.325 kPa. The nozzle exit area $A_e$ is an input, because a .eng file doesn't include it. The mass flow is set by the chamber, so it doesn't change.
+
+Checked by: in a drag-free flight at constant mass, the extra burnout speed equals $(A_e/m)\int(p_\text{ref} - p_a)\,dt$ along the trajectory (`test_pressure_thrust_adds_the_expected_speed`).
+
 ## 3. Mass properties (`rocket.py`)
 
 Stations are measured from the nose tip, increasing toward the tail. Each part is modeled as follows:
@@ -143,7 +151,7 @@ $$v_t = \sqrt{\frac{2mg}{\rho\,C_dA}}$$
 
 - Subsonic only. There is no transonic drag rise, and no body lift at higher angles of attack (Galejs).
 - No roll dynamics, fin cant or thrust misalignment.
-- Thrust doesn't change with altitude.
+- Thrust changes with altitude only if you give the nozzle exit diameter.
 - Parachutes open instantly.
 - Wind is a steady power-law profile with no gusts.
 - The example rocket's dimensions are representative of 3-inch kits. They aren't a specific kit.

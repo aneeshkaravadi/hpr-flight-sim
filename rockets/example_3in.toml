@@ -38,3 +38,4 @@ station = 1.38
 [motor]
 file = "../data/motors/AeroTech_I284W.eng"
 overhang = 0.0             # how far the motor nozzle sticks out past the body end
+# nozzle_exit_diameter = 0.016   # m, measured with calipers; adds the extra thrust at altitude (off when absent)
