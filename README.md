@@ -56,6 +56,10 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 <img src="docs/figures/altitude_thrust.png" width="60%">
 
+**Spinning the rocket only partly fixes a crooked motor.** If the thrust line is off the body axis by just 0.25°, from a slightly crooked motor mount, the I284W reaches apogee 190 m from the pad with no wind at all. Canting the fins makes the rocket spin, so the crooked push keeps changing direction and partly cancels out. But spin only builds with speed. With 1° of cant it peaks at 2 rev/s near burnout, and the slow first second off the rail, when the rocket is easiest to push around, gets almost none. So 1° of cant cuts the drift to 135 m and 2° to 115 m, not to zero.
+
+![Spin](docs/figures/spin.png)
+
 <!-- TODO(Aneesh): once you have an altimeter log, add a section here, e.g.
 ## Checking it against a real flight
 Run examples/compare_flight.py with your club rocket's TOML, motor and altimeter CSV (data/flights/), and show the overlay plot,
@@ -64,7 +68,7 @@ the uncalibrated error and the fitted drag multiplier. Then predict a second fli
 
 ## How I checked it
 
-There are 41 tests, and each compares against something worked out independently:
+There are 43 tests, and each compares against something worked out independently:
 - standard atmosphere tables
 - the published impulse of each motor
 - the rocket equation, with no gravity or drag
@@ -72,6 +76,7 @@ There are 41 tests, and each compares against something worked out independently
 - Barrowman's nose and fin results, including the quarter-chord CP of a rectangular fin, and the CP of every nose shape from its volume
 - the extra speed from pressure thrust at altitude
 - the closed-form opening shock of a filling parachute
+- the steady roll rate of canted fins and how fast it spins up, and the torque from a misaligned thrust line
 - terminal velocity under the main parachute
 - masses and positions of an OpenRocket design worked out by hand
 - the step size being converged
@@ -110,7 +115,7 @@ After a flight, calibrate the drag against the altimeter with `examples/compare_
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                                          # 41 checks, ~15 s
+pytest -q                                          # 43 checks, ~15 s
 python examples/make_figures.py                    # every figure and number above
 python examples/make_figures.py --only weathercock # or just one section
 ```
@@ -128,7 +133,7 @@ python examples/make_figures.py --only weathercock # or just one section
 
 ## What's next
 
-See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): transonic drag, roll and fin cant, and real flight comparisons.
+See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): transonic drag and real flight comparisons.
 
 ---
 

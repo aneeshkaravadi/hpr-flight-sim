@@ -220,5 +220,43 @@
       "15deg": 0.14,
       "20deg": -0.09
     }
+  },
+  "spin": {
+    "cant_0.0deg": {
+      "apogee_drift_m": {
+        "0.1deg": 70.8,
+        "0.25deg": 191.5,
+        "0.5deg": 435.7
+      },
+      "burnout_tilt_deg_at_0.25": 5.63,
+      "peak_spin_rev_s": 0.0
+    },
+    "cant_0.5deg": {
+      "apogee_drift_m": {
+        "0.1deg": 57.0,
+        "0.25deg": 155.3,
+        "0.5deg": 360.1
+      },
+      "burnout_tilt_deg_at_0.25": 4.53,
+      "peak_spin_rev_s": 1.01
+    },
+    "cant_1.0deg": {
+      "apogee_drift_m": {
+        "0.1deg": 50.0,
+        "0.25deg": 134.9,
+        "0.5deg": 308.2
+      },
+      "burnout_tilt_deg_at_0.25": 3.92,
+      "peak_spin_rev_s": 2.03
+    },
+    "cant_2.0deg": {
+      "apogee_drift_m": {
+        "0.1deg": 42.5,
+        "0.25deg": 113.5,
+        "0.5deg": 255.4
+      },
+      "burnout_tilt_deg_at_0.25": 3.21,
+      "peak_spin_rev_s": 4.05
+    }
   }
 }

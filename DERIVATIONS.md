@@ -117,7 +117,15 @@ $$C = \frac{\rho V A}{2}\sum_i C_{N\alpha,i}(x_i - x_{cg})^2 + \dot m\,(x_\text{
 
 $$m\dot{\vec v} = \sum\vec F, \qquad I\dot\omega = M - \omega\times I\omega, \qquad \dot q = \tfrac12\,q\otimes(0, \omega)$$
 
-Roll is not modeled. Integration is classic 4th-order Runge–Kutta, with a 2 ms step during the burn and 10 ms during the coast. Halving both steps changes the apogee by under 0.1% (`test_time_step_is_converged`).
+**Roll.** Canted fins drive it, and the fins themselves resist it. With fin cant $\delta$, each fin makes normal force $C_{N\alpha 1}\delta$ at its mean aerodynamic chord, a distance $y_\text{MAC} + r_t$ from the axis (Barrowman). Rolling at rate $p$, a strip of fin at radius $r$ meets the air at an extra angle $pr/V$ and pushes back with the 2-D slope $2\pi/\beta$ (strip theory). Together,
+
+$$M_\text{roll} = qA\,N C_{N\alpha 1}\delta\,(y_\text{MAC} + r_t) - q\frac{p}{V}N\frac{2\pi}{\beta}\int_{r_t}^{r_t+s} c(r)\,r^2\,dr$$
+
+with $C_{N\alpha 1}$ the slope of one fin (the fin formula above, without the body interference factor) and $y_\text{MAC} = \tfrac{s}{3}\tfrac{C_r + 2C_t}{C_r + C_t}$. The roll rate settles where the two terms balance, which is proportional to speed, and it gets there with time constant $I_\text{roll}V/(qK_d)$. Here $K_d$ is everything multiplying $qp/V$ in the damping term (`test_canted_fins_spin_up_to_the_steady_roll_rate`).
+
+**Thrust misalignment.** A thrust line tilted by $\varepsilon$ at the nozzle adds a side force $F\sin\varepsilon$ and a moment $(x_{cg} - x_\text{nozzle})F\sin\varepsilon$ about the CG (`test_thrust_misalignment_torques_the_rocket_about_the_cg`).
+
+Integration is classic 4th-order Runge–Kutta, with a 2 ms step during the burn and 10 ms during the coast. Halving both steps changes the apogee by under 0.1% (`test_time_step_is_converged`).
 
 **Launch rail.** Until the rocket has traveled the rail length, it can only slide along the rail and cannot rotate. The exit moment is interpolated within the time step (`test_vertical_flight_without_drag_matches_kinematics` checks $v = \sqrt{2aL}$ to 0.2%).
 
@@ -186,7 +194,7 @@ Checked against a design whose masses and positions are worked out by hand (`tes
 ## Limitations
 
 - Subsonic only. There is no transonic drag rise.
-- No roll dynamics, fin cant or thrust misalignment.
+- Fin cant adds no drag in the model, and roll damping comes from the fins only.
 - Thrust changes with altitude only if you give the nozzle exit diameter.
 - Parachute filling is a simple model: drag area grows with distance squared, and the fill constant is an assumption.
 - Wind is a steady power-law profile with no gusts.

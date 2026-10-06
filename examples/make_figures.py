@@ -6,7 +6,7 @@
 
 Every simulation goes through hprsim.runner: one progress bar for the whole job,
 lowest CPU priority, and + / - keys to change how many run at once while it goes.
-Sections: thrust, baseline, weathercock, landing, montecarlo, altitude, recovery, bodylift.
+Sections: thrust, baseline, weathercock, landing, montecarlo, altitude, recovery, bodylift, spin.
 """
 from __future__ import annotations
 
@@ -27,7 +27,9 @@ FIG = ROOT / "docs" / "figures"
 RESULTS = ROOT / "docs" / "results.json"
 ROCKET = ROOT / "rockets" / "example_3in.toml"
 MOTORS = {name: ROOT / "data" / "motors" / f"AeroTech_{name}.eng" for name in ("H128W", "I284W", "J420R")}
-SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude", "recovery", "bodylift")
+SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude", "recovery", "bodylift", "spin")
+CANTS = (0.0, 0.5, 1.0, 2.0)  # fin cant, deg
+MISALIGNS = (0.1, 0.25, 0.5)  # thrust misalignment, deg (by symmetry its direction only rotates the result)
 SITES = (0.0, 500.0, 1000.0, 1500.0, 2000.0)  # launch site elevation, m
 EXITS = (0.0, 0.012, 0.016, 0.020)  # nozzle exit diameter, m (0 = curve as certified)
 WINDS = np.arange(0, 10.1, 1.0)
@@ -42,12 +44,18 @@ def fly(spec: dict) -> dict:
     mot.impulse_scale = spec.get("impulse_scale", 1.0)
     mot.exit_area = np.pi * spec.get("exit_diameter", 0.0) ** 2 / 4
     r = rocket.load(ROCKET, motor=mot, cd_scale=spec.get("cd_scale", 1.0),
-                    dry_mass_scale=spec.get("dry_mass_scale", 1.0))
+                    dry_mass_scale=spec.get("dry_mass_scale", 1.0),
+                    thrust_misalignment_deg=spec.get("misalignment_deg", 0.0),
+                    thrust_misalignment_azimuth_deg=spec.get("misalignment_azimuth_deg", 0.0))
+    r.fins.cant = np.radians(spec.get("cant_deg", 0.0))
     fl = flight.simulate(r, flight.Launch(**spec.get("launch", {})), flight.Recovery(**spec.get("recovery", {})),
                          ascent_only=spec.get("ascent_only", False))
     out = {"events": fl.events}
+    if spec.get("burnout_state"):
+        k = int(np.searchsorted(fl.t, mot.burn_time))
+        out.update(burnout_tilt_deg=float(fl.tilt_deg[k]), burnout_roll_rate=float(fl.roll_rate[k]))
     if spec.get("keep_trajectory"):
-        out.update(t=fl.t, pos=fl.pos, vel=fl.vel, margin=fl.margin)
+        out.update(t=fl.t, pos=fl.pos, vel=fl.vel, margin=fl.margin, roll_rate=fl.roll_rate)
     return out
 
 
@@ -109,6 +117,9 @@ def main():
         jobs["mc_cal"], mc_cal_in = monte_carlo_specs(args.mc, 0.02, seed=2)
     if "recovery" in only:
         jobs["recovery"] = [{"motor": "I284W"}, {"motor": "I284W", "recovery": {"drogue_cda": None, "main_altitude": None}}]
+    if "spin" in only:
+        jobs["spin"] = [{"motor": "I284W", "ascent_only": True, "burnout_state": True, "cant_deg": c,
+                         "misalignment_deg": e, "keep_trajectory": e == 0.25} for c in CANTS for e in MISALIGNS]
     if "altitude" in only:
         jobs["altitude"] = [{"motor": "I284W", "ascent_only": True, "exit_diameter": d,
                              "launch": {"site_elevation": h}} for h in SITES for d in EXITS]
@@ -321,6 +332,32 @@ def main():
                      "the margin Barrowman gives only holds at small angles", fontsize=10)
         ax.legend(fontsize=8)
         save(fig, "margin_vs_aoa.png")
+
+    # ---- 9. spin vs thrust misalignment
+    if "spin" in only:
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.0))
+        results["spin"] = {}
+        for j, c in enumerate(CANTS):
+            rows = res["spin"][j * len(MISALIGNS):(j + 1) * len(MISALIGNS)]
+            drift = [float(np.hypot(*o["events"]["apogee_xy"])) for o in rows]
+            axes[0].plot(MISALIGNS, drift, "o-", label=f"fin cant {c:.1f} deg")
+            mid = rows[MISALIGNS.index(0.25)]
+            asc = mid["t"] <= mid["events"]["apogee_time"]
+            axes[1].plot(mid["t"][asc], mid["roll_rate"][asc] / (2 * np.pi), label=f"fin cant {c:.1f} deg")
+            results["spin"][f"cant_{c:.1f}deg"] = {
+                "apogee_drift_m": {f"{e}deg": round(d, 1) for e, d in zip(MISALIGNS, drift)},
+                "burnout_tilt_deg_at_0.25": round(mid["burnout_tilt_deg"], 2),
+                "peak_spin_rev_s": round(float(np.nanmax(mid["roll_rate"][asc]) / (2 * np.pi)), 2)}
+        axes[0].set_xlabel("thrust misalignment (deg)")
+        axes[0].set_ylabel("apogee distance from the pad (m)")
+        axes[0].set_title("A crooked thrust line pushes apogee off the pad (no wind)", fontsize=10)
+        axes[1].set_xlabel("time (s)")
+        axes[1].set_ylabel("spin (rev/s)")
+        axes[1].set_title("Canted fins spin up with speed, so the slow\nfirst second off the rail gets little spin", fontsize=10)
+        for ax in axes:
+            ax.legend(fontsize=8)
+        fig.suptitle("I284W: fin cant against thrust misalignment", fontsize=10)
+        save(fig, "spin.png")
 
     RESULTS.write_text(json.dumps(results, indent=2))
     print(f"updated: {', '.join(sorted(only))}  ->  {RESULTS.relative_to(ROOT)}")
