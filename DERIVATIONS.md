@@ -61,6 +61,14 @@ $$X_f = X_b + \frac{X_t}{3}\frac{C_r + 2C_t}{C_r + C_t} + \frac16\left[(C_r + C_
 
 The first factor in $C_{N\alpha,f}$ accounts for the body increasing the flow over the fins. For a rectangular, unswept fin, $X_f$ lands exactly at the quarter chord, which is the classic thin-airfoil result (`test_rectangular_fin_cp_is_quarter_chord...`).
 
+**Body lift at larger angles.** The terms above are linear in $\alpha$ and leave out the body tube's own lift, which matters once the angle of attack is more than a few degrees. Galejs' correction (the one OpenRocket uses) adds
+
+$$C_{N,\text{body}} = K\,\frac{A_\text{plan}}{A_\text{ref}}\sin^2\alpha, \qquad K = 1.1$$
+
+acting at the centroid of the side-view (planform) area of the nose and body. The nose planform is $2\int r\,dx$, with its centroid from $\int 2rx\,dx$. The CP at a finite angle is the average of the linear CP and the planform centroid, weighted by their normal forces, $C_{N\alpha}\alpha$ and $C_{N,\text{body}}$ (`Rocket.cp_at`).
+
+Checked by: a cone's planform is a triangle, with area $RL$ and centroid at $\tfrac23 L$ (`test_cone_planform_area_and_centroid`). The force and moment the flight code applies match the formula (`test_body_lift_force_and_moment_follow_galejs`).
+
 **Compressibility.** The fin slope is multiplied by $1/\sqrt{1 - M^2}$ (Prandtl–Glauert), capped at $M = 0.8$. That's why the static margin rises near max speed.
 
 **Total CP and static margin:**
@@ -93,7 +101,7 @@ The example rocket comes out at $C_D \approx 0.5$ around Mach 0.3, which is in t
 - **thrust:** $F\,\hat x_b$
 - **gravity:** $-mg\,\hat z$
 - **drag:** $-\tfrac12\rho V^2 A C_D\,\hat v_a$
-- **normal force:** magnitude $\tfrac12\rho V^2 A C_{N\alpha}\,\alpha$, where the angle of attack is $\alpha = \arctan(|u_\perp|/u_x)$ and $u = R^\top\vec v_a$ is the airspeed in the body frame. It acts at the CP and points against the sideways component of the airspeed, $-\hat u_\perp$.
+- **normal force:** magnitude $\tfrac12\rho V^2 A C_{N\alpha}\,\alpha$, where the angle of attack is $\alpha = \arctan(|u_\perp|/u_x)$ and $u = R^\top\vec v_a$ is the airspeed in the body frame. It acts at the CP and points against the sideways component of the airspeed, $-\hat u_\perp$. Body lift, $\tfrac12\rho V^2 A\,C_{N,\text{body}}$, acts in the same direction at the planform centroid.
 
 **Why it weathercocks.** The CP sits behind the CG, so the normal force at the CP creates a moment $(x_{cg} - x_{cp})\hat x_b \times \vec N$. That moment turns the nose toward the direction the rocket is moving relative to the air. In a crosswind, that means turning upwind (`test_rocket_weathercocks_into_the_wind`).
 
@@ -157,7 +165,7 @@ $n$ depends on the canopy type. It is an assumption here (8 by default), which i
 
 ## Limitations
 
-- Subsonic only. There is no transonic drag rise, and no body lift at higher angles of attack (Galejs).
+- Subsonic only. There is no transonic drag rise.
 - No roll dynamics, fin cant or thrust misalignment.
 - Thrust changes with altitude only if you give the nozzle exit diameter.
 - Parachute filling is a simple model: drag area grows with distance squared, and the fill constant is an assumption.

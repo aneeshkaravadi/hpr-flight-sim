@@ -6,7 +6,7 @@
 
 Every simulation goes through hprsim.runner: one progress bar for the whole job,
 lowest CPU priority, and + / - keys to change how many run at once while it goes.
-Sections: thrust, baseline, weathercock, landing, montecarlo, altitude, recovery.
+Sections: thrust, baseline, weathercock, landing, montecarlo, altitude, recovery, bodylift.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ FIG = ROOT / "docs" / "figures"
 RESULTS = ROOT / "docs" / "results.json"
 ROCKET = ROOT / "rockets" / "example_3in.toml"
 MOTORS = {name: ROOT / "data" / "motors" / f"AeroTech_{name}.eng" for name in ("H128W", "I284W", "J420R")}
-SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude", "recovery")
+SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude", "recovery", "bodylift")
 SITES = (0.0, 500.0, 1000.0, 1500.0, 2000.0)  # launch site elevation, m
 EXITS = (0.0, 0.012, 0.016, 0.020)  # nozzle exit diameter, m (0 = curve as certified)
 WINDS = np.arange(0, 10.1, 1.0)
@@ -302,6 +302,25 @@ def main():
             "main_at_apogee": {k: round(float(apogee_main[k]), 1) for k in ("main_opening_force_N", "main_opening_g")},
             "main_force_N_vs_speed": {f"fill_{n:.0f}D": {f"{v:.0f}": round(float(f), 0) for v, f in zip(speeds, c)}
                                       for n, c in curves.items()}}
+
+    # ---- 8. stability at a finite angle of attack (no simulation)
+    if "bodylift" in only:
+        alphas = np.arange(0.0, 25.1, 1.0)
+        fig, ax = plt.subplots(figsize=(6.5, 3.8))
+        results["bodylift"] = {}
+        for name, path in MOTORS.items():
+            r = rocket.load(ROCKET, motor=motor.Motor.from_eng(path))
+            xcg = r.mass_props(0.0)[1]
+            margin = [(r.cp_at(np.radians(max(a, 0.01))) - xcg) / r.diameter for a in alphas]
+            ax.plot(alphas, margin, label=name)
+            results["bodylift"][name] = {f"{a:.0f}deg": round(float(m), 2) for a, m in zip(alphas, margin) if a in (0, 5, 10, 15, 20)}
+        ax.axhline(0.0, color="k", lw=0.8)
+        ax.set_xlabel("angle of attack (deg)")
+        ax.set_ylabel("static margin at liftoff (calibers)")
+        ax.set_title("Body lift grows as sin^2(alpha) and acts ahead of the CG:\n"
+                     "the margin Barrowman gives only holds at small angles", fontsize=10)
+        ax.legend(fontsize=8)
+        save(fig, "margin_vs_aoa.png")
 
     RESULTS.write_text(json.dumps(results, indent=2))
     print(f"updated: {', '.join(sorted(only))}  ->  {RESULTS.relative_to(ROOT)}")

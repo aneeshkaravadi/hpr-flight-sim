@@ -36,14 +36,14 @@
   },
   "weathercock": {
     "H128W": {
-      "apogee_loss_pct_at_8ms": 3.0,
+      "apogee_loss_pct_at_8ms": 2.5,
       "rail_exit_aoa_deg_at_8ms": 20.6,
-      "upwind_apogee_drift_m_at_8ms": 46.0
+      "upwind_apogee_drift_m_at_8ms": 38.0
     },
     "I284W": {
-      "apogee_loss_pct_at_8ms": 1.9,
+      "apogee_loss_pct_at_8ms": 1.5,
       "rail_exit_aoa_deg_at_8ms": 14.0,
-      "upwind_apogee_drift_m_at_8ms": 142.0
+      "upwind_apogee_drift_m_at_8ms": 104.0
     }
   },
   "rail_length_H128W_8ms": {
@@ -61,36 +61,36 @@
     }
   },
   "landing_m_at_8ms": {
-    "dual deploy (drogue, main at 150 m)": 776.0,
-    "main at apogee": 3416.0
+    "dual deploy (drogue, main at 150 m)": 823.0,
+    "main at apogee": 3473.0
   },
   "monte_carlo": {
     "n": 300,
     "uncalibrated": {
       "p5": 1220,
-      "p50": 1332,
-      "p95": 1505,
-      "std": 87.6
+      "p50": 1334,
+      "p95": 1506,
+      "std": 87.5
     },
     "drag_calibrated": {
-      "p5": 1241,
-      "p50": 1321,
-      "p95": 1395,
-      "std": 48.6
+      "p5": 1244,
+      "p50": 1323,
+      "p95": 1396,
+      "std": 48.3
     },
     "variance_share_uncalibrated": {
-      "drag": 0.68,
-      "dry mass": 0.02,
+      "drag": 0.683,
+      "dry mass": 0.021,
       "motor impulse": 0.24,
-      "wind speed": 0.009,
-      "air temperature": 0.051
+      "wind speed": 0.006,
+      "air temperature": 0.052
     },
     "variance_share_calibrated": {
-      "drag": 0.063,
-      "dry mass": 0.053,
-      "motor impulse": 0.677,
-      "wind speed": 0.027,
-      "air temperature": 0.178
+      "drag": 0.065,
+      "dry mass": 0.054,
+      "motor impulse": 0.683,
+      "wind speed": 0.017,
+      "air temperature": 0.181
     },
     "inputs": "drag x N(1, 0.10) [calibrated: 0.02]; dry mass x N(1, 0.02); impulse x N(1, 0.03); wind U(0, 8) m/s from a random direction; temperature ISA + N(0, 8) K"
   },
@@ -196,6 +196,29 @@
         "85": 864.0,
         "90": 965.0
       }
+    }
+  },
+  "bodylift": {
+    "H128W": {
+      "0deg": 2.9,
+      "5deg": 2.06,
+      "10deg": 1.56,
+      "15deg": 1.23,
+      "20deg": 1.0
+    },
+    "I284W": {
+      "0deg": 1.96,
+      "5deg": 1.13,
+      "10deg": 0.63,
+      "15deg": 0.3,
+      "20deg": 0.07
+    },
+    "J420R": {
+      "0deg": 1.81,
+      "5deg": 0.97,
+      "10deg": 0.47,
+      "15deg": 0.14,
+      "20deg": -0.09
     }
   }
 }

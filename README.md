@@ -30,11 +30,15 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 ## What it taught me
 
-**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (2 to 3% lower at 8 m/s), but the I284W ends up 142 m upwind of the pad at apogee.
+**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (1.5 to 2.5% lower at 8 m/s), but the I284W ends up 104 m upwind of the pad at apogee.
 
 ![Weathercocking](docs/figures/weathercock.png)
 
-**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.4 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 780 m.
+**A 2-caliber margin is a small-angle number.** Barrowman's method treats normal force as linear in the angle of attack and leaves out the body tube's own lift, which grows as sin²α. That's fine in steady flight, but not for a rocket leaving a short rail in wind at 14 to 21°. With Galejs' body-lift correction, the I284W's 2.0-caliber margin at liftoff drops to 0.6 at 10° and almost nothing at 20°, and on the J420R it goes slightly negative. The body lift acts ahead of the CG, so the simulator, which includes it, also shows the rocket turning into the wind less than plain Barrowman predicts: 104 m upwind at apogee instead of 142 m.
+
+<img src="docs/figures/margin_vs_aoa.png" width="60%">
+
+**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.5 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 820 m.
 
 ![Landing dispersion](docs/figures/landing_dispersion.png)
 
@@ -44,7 +48,7 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 **After you calibrate drag, the motor is the biggest unknown.** I ran 300 flights per case with realistic scatter in drag, dry mass, motor impulse (±3%), wind and air temperature.
 - **With my drag model as-is**, the apogee spread is ±88 m (1σ), and 68% of that comes from not knowing the drag well enough.
-- **After calibrating drag** from one real flight (`examples/compare_flight.py`), the spread drops to ±49 m, and now 68% of what's left is the motor itself: no two reloads give exactly the same impulse, and no amount of calibration fixes that.
+- **After calibrating drag** from one real flight (`examples/compare_flight.py`), the spread drops to ±48 m, and now 68% of what's left is the motor itself: no two reloads give exactly the same impulse, and no amount of calibration fixes that.
 
 ![Monte Carlo](docs/figures/monte_carlo.png)
 
@@ -109,7 +113,7 @@ python examples/make_figures.py --only weathercock # or just one section
 
 ## What's next
 
-See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): importing OpenRocket `.ork` files directly, transonic drag, body lift at higher angles of attack, and real flight comparisons.
+See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): importing OpenRocket `.ork` files directly, transonic drag, roll and fin cant, and real flight comparisons.
 
 ---
 
