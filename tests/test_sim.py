@@ -157,6 +157,17 @@ def test_body_lift_moves_the_cp_forward_at_high_angle():
     assert r.cp_at(np.radians(20.0)) < xcp - 0.05  # the planform centroid is well ahead of the fins
 
 
+def test_fin_slope_compressibility_acts_through_the_aspect_ratio():
+    """beta = sqrt(1 - M^2) multiplies the 2 L_F / (Cr + Ct) term, which grows the slope far less than 1/beta would."""
+    c, s, d, n, M = 0.10, 0.08, 0.08, 4, 0.6
+    f = rocket.FinSet(n, c, c, s, 0.0, 0.003, 0.1, station=1.0, body_diameter=d)
+    beta = np.sqrt(1 - M**2)
+    interference = 1 + (d / 2) / (s + d / 2)
+    by_hand = interference * 4 * n * (s / d) ** 2 / (1 + np.sqrt(1 + (beta * s / c) ** 2))
+    assert f.cnalpha_cp(d, M)[0] == pytest.approx(by_hand, rel=1e-12)
+    assert f.cnalpha_cp(d, M)[0] / f.cnalpha_cp(d, 0.0)[0] < 1 / beta
+
+
 def test_example_rocket_is_stable_and_margin_grows_during_burn():
     r = rocket.load(ROCKET)
     assert 1.0 < r.static_margin(0.0) < r.static_margin(r.motor.burn_time + 1)

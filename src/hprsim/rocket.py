@@ -150,9 +150,11 @@ class FinSet:
         Cr, Ct, s, xt, n = self.root_chord, self.tip_chord, self.span, self.sweep, self.count
         R = self.body_diameter / 2
         interference = 1 + R / (s + R)
-        cna = interference * 4 * n * (s / ref_diameter) ** 2 / (1 + np.sqrt(1 + (2 * self.mid_chord_length / (Cr + Ct)) ** 2))
-        # Prandtl-Glauert compressibility; capped at M = 0.8, where the subsonic theory stops being trustworthy
-        cna /= np.sqrt(1 - min(mach, 0.8) ** 2)
+        # Compressibility enters through the effective aspect ratio (Diederich's semi-empirical form, the one
+        # OpenRocket uses), not as a 1/beta factor on the whole slope; capped at M = 0.8 (subsonic theory)
+        beta = np.sqrt(1 - min(mach, 0.8) ** 2)
+        cna = interference * 4 * n * (s / ref_diameter) ** 2 / (
+            1 + np.sqrt(1 + (beta * 2 * self.mid_chord_length / (Cr + Ct)) ** 2))
         xf = xt / 3 * (Cr + 2 * Ct) / (Cr + Ct) + (Cr + Ct - Cr * Ct / (Cr + Ct)) / 6
         return float(cna), self.station + xf
 
