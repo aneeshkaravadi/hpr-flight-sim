@@ -12,7 +12,10 @@ Ascent (rigid body, quaternion attitude):
   Roll is not modeled (no fin cant).
 
 On the rail the rocket only slides along the rail. After apogee the recovery
-system turns it into a point mass hanging under a drag area (Cd * A).
+system turns it into a point mass hanging under a drag area (Cd * A). A canopy
+doesn't open instantly: its drag area grows with the square of the distance it
+has traveled since deployment, reaching full size after fill_constant canopy
+diameters, and the peak force while it fills is the opening shock.
 """
 from __future__ import annotations
 
@@ -56,6 +59,9 @@ class Recovery:
     drogue_cda: float | None = 0.057  # m^2 (12 in drogue); None = no drogue
     main_cda: float = 1.41  # m^2 (60 in main)
     main_altitude: float | None = 150.0  # m AGL; None = main opens at apogee
+    drogue_diameter: float = 0.305  # m, nominal (sets how far it travels while filling)
+    main_diameter: float = 1.524  # m
+    fill_constant: float = 8.0  # canopy diameters traveled while filling (assumed; varies by canopy type)
 
 
 @dataclass
@@ -166,12 +172,82 @@ def _deriv_rail(rocket: Rocket, launch: Launch, t, y, u_rail):
     return np.concatenate([v, a * u_rail, np.zeros(4), np.zeros(3)])
 
 
-def _deriv_descent(launch: Launch, m, cda, t, y):
+def _deriv_descent(launch: Launch, m, cda_of, t, y):
+    """State: position, velocity, and the air-relative distance traveled since the current canopy deployed."""
     r, v = y[0:3], y[3:6]
     air = isa(launch.site_elevation + r[2], launch.dT)
     v_air = v - launch.wind(r[2])
-    force = np.array([0.0, 0.0, -m * launch.gravity]) - 0.5 * air.rho * np.linalg.norm(v_air) * v_air * cda
-    return np.concatenate([v, force / m])
+    speed = float(np.linalg.norm(v_air))
+    force = np.array([0.0, 0.0, -m * launch.gravity]) - 0.5 * air.rho * speed * v_air * cda_of(y[6])
+    return np.concatenate([v, force / m, [speed]])
+
+
+def _canopy(base_cda, full_cda, diameter, fill_constant):
+    """Drag area as a function of distance traveled since deployment: grows as distance^2 until filled."""
+    fill = fill_constant * diameter
+
+    def cda_of(s):
+        if fill <= 0 or s >= fill:
+            return full_cda
+        return base_cda + (full_cda - base_cda) * (max(s, 0.0) / fill) ** 2
+    return cda_of, fill
+
+
+def descend(launch: Launch, recovery: Recovery, m: float, t: float, y: np.ndarray, ev: dict, rec: dict | None = None,
+            dt: float = 0.05, dt_fill: float = 0.002, t_end: float | None = None):
+    """Point mass under the recovery system, from state y = (position, velocity) at time t until landing.
+
+    Records the peak force while each canopy fills (<canopy>_opening_force_N and _g) in ``ev``.
+    """
+    use_drogue = bool(recovery.drogue_cda) and recovery.main_altitude is not None
+    stage = "drogue" if use_drogue else "main"
+    if use_drogue:
+        cda_of, fill = _canopy(0.0, recovery.drogue_cda, recovery.drogue_diameter, recovery.fill_constant)
+    else:
+        cda_of, fill = _canopy(0.0, recovery.main_cda, recovery.main_diameter, recovery.fill_constant)
+    yd = np.concatenate([np.asarray(y, float)[0:6], [0.0]])
+    peak = 0.0
+
+    def finish_stage():
+        ev[f"{stage}_opening_force_N"] = peak
+        ev[f"{stage}_opening_g"] = peak / (m * G0)
+
+    while True:
+        filling = yd[6] < fill
+        h = dt_fill if filling else dt
+        y_new = _rk4(lambda tt, yy: _deriv_descent(launch, m, cda_of, tt, yy), t, yd, h)
+        if filling:
+            air = isa(launch.site_elevation + y_new[2], launch.dT)
+            v_air = y_new[3:6] - launch.wind(y_new[2])
+            peak = max(peak, 0.5 * air.rho * float(v_air @ v_air) * cda_of(y_new[6]))
+            if y_new[6] >= fill:
+                finish_stage()
+        if stage == "drogue" and y_new[2] <= recovery.main_altitude:
+            if yd[6] < fill:
+                finish_stage()
+            stage, peak = "main", 0.0
+            cda_of, fill = _canopy(recovery.drogue_cda, recovery.main_cda, recovery.main_diameter,
+                                   recovery.fill_constant)
+            ev["main_time"] = t + h
+            ev["drogue_descent_speed"] = float(-y_new[5])
+            y_new[6] = 0.0
+        if y_new[2] <= 0:
+            frac = yd[2] / (yd[2] - y_new[2])
+            y_land = yd + frac * (y_new - yd)
+            t += frac * h
+            if y_land[6] < fill:
+                finish_stage()
+            ev.update(landing_time=t, landing_xy=y_land[0:2].copy(), landing_distance_m=float(np.hypot(*y_land[0:2])),
+                      landing_speed=float(np.linalg.norm(y_land[3:6] - launch.wind(0.0))))
+            if rec is not None:
+                rec_descent(rec, y_land, t)
+            return t, y_land[0:6]
+        t += h
+        yd = y_new
+        if rec is not None:
+            rec_descent(rec, yd, t)
+        if t > 1200 or (t_end is not None and t >= t_end):
+            return t, yd[0:6]
 
 
 def _cross(a, b):
@@ -268,30 +344,7 @@ def simulate(rocket: Rocket, launch: Launch = None, recovery: Recovery = None, d
 
     # ---------------- descent (point mass under parachutes)
     m_dry, _, _, _ = rocket.mass_props(burn + 1.0)
-    yd = y[0:6].copy()
-    cda = recovery.drogue_cda if (recovery.drogue_cda and recovery.main_altitude is not None) else recovery.main_cda
-    main_open = cda == recovery.main_cda
-    while True:
-        y_new = _rk4(lambda tt, yy: _deriv_descent(launch, m_dry, cda, tt, yy), t, yd, dt_descent)
-        if not main_open and y_new[2] <= recovery.main_altitude:
-            main_open = True
-            cda = recovery.main_cda
-            ev["main_time"] = t + dt_descent
-            ev["drogue_descent_speed"] = float(-y_new[5])
-        if y_new[2] <= 0:
-            frac = yd[2] / (yd[2] - y_new[2])
-            y_land = yd + frac * (y_new - yd)
-            t += frac * dt_descent
-            ev.update(landing_time=t, landing_xy=y_land[0:2].copy(), landing_distance_m=float(np.hypot(*y_land[0:2])),
-                      landing_speed=float(np.linalg.norm(y_land[3:6] - launch.wind(0.0))))
-            yd = y_land
-            rec_descent(rec, yd, t)
-            break
-        t += dt_descent
-        yd = y_new
-        rec_descent(rec, yd, t)
-        if t > 1200:
-            break
+    descend(launch, recovery, m_dry, t, y[0:6], ev, rec, dt=dt_descent)
     return _pack(rec, ev)
 
 

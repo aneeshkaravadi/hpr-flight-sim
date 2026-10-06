@@ -198,6 +198,25 @@ def test_descent_reaches_terminal_velocity_under_main():
     assert fl.events["landing_speed"] == pytest.approx(v_t, rel=0.02)
 
 
+def test_opening_shock_matches_the_closed_form():
+    """Gravity-free canopy whose drag area grows as (x / L)^2 over the fill distance L:
+    m v dv/dx = -1/2 rho v^2 C (x/L)^2  gives  v = v0 exp(-k x^3),  k = rho C / (6 m L^2),
+    so the force peaks at x* = (3k)^(-1/3), or at full inflation when x* > L (a heavy payload).
+    """
+    launch = flight.Launch(gravity=0.0, site_elevation=0.0)
+    rho = atmosphere.isa(1000.0).rho
+    C, D, n, v0 = 1.41, 1.524, 8.0, 30.0
+    L = n * D
+    for m in (2.0, 200.0):
+        rec = flight.Recovery(drogue_cda=None, main_altitude=None, main_cda=C, main_diameter=D, fill_constant=n)
+        ev = {}
+        flight.descend(launch, rec, m, 0.0, np.array([0.0, 0.0, 1000.0, v0, 0.0, 0.0]), ev, t_end=5.0, dt_fill=5e-4)
+        k = rho * C / (6 * m * L**2)
+        x = min((1 / (3 * k)) ** (1 / 3), L)
+        expected = 0.5 * rho * C * v0**2 * (x / L) ** 2 * np.exp(-2 * k * x**3)
+        assert ev["main_opening_force_N"] == pytest.approx(expected, rel=2e-3)
+
+
 def test_time_step_is_converged():
     r = rocket.load(ROCKET)
     a = flight.simulate(r, flight.Launch(wind_speed=4.0), ascent_only=True).apogee
