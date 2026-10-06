@@ -70,9 +70,11 @@ class NoseCone:
         raise ValueError(f"unknown nose cone shape {self.shape!r}")
 
     def _profile(self, n=2001):
+        """Profile points and trapezoid-rule weights along the arc length (so sum(f * ds) integrates f ds)."""
         x = np.linspace(0, self.length, n)
         r = self.radius(x)
-        ds = np.hypot(np.gradient(x), np.gradient(r))
+        seg = np.hypot(np.diff(x), np.diff(r))
+        ds = np.r_[seg / 2, 0.0] + np.r_[0.0, seg / 2]
         return x, r, ds
 
     @cached_property
