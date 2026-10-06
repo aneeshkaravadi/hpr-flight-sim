@@ -183,6 +183,16 @@ def test_drag_pieces_join_up_across_mach_one():
     assert aero.base_drag_coefficient(2.0) == pytest.approx(0.125)
 
 
+def test_skin_friction_blends_through_mach_one():
+    """The subsonic and supersonic compressibility corrections meet in a straight line from Mach 0.9 to 1.1."""
+    for roughness in (0.0, 60e-6):  # smooth (turbulent Cf governs) and painted (roughness-limited)
+        for m in (0.9, 1.0, 1.1):
+            assert aero.skin_friction(3e7, m - 1e-9, roughness, 1.5) == pytest.approx(
+                aero.skin_friction(3e7, m + 1e-9, roughness, 1.5), rel=1e-6)
+    cf = 1 / (1.5 * np.log(3e7) - 5.6) ** 2
+    assert aero.skin_friction(3e7, 1.0, 0.0, 1.5) == pytest.approx(cf * (0.9 + 1.15**-0.58) / 2)
+
+
 def test_square_fin_edges_by_hand():
     """Square edges: stagnation drag on the leading edge (times cos^2 of the sweep) plus base drag on the trailing one."""
     r = rocket.load(ROCKET)

@@ -6,7 +6,8 @@ behind OpenRocket:
 
   skin friction   Cf from Reynolds number (turbulent, or roughness-limited, whichever is larger),
                   times wetted area with form factors (1 + 1/(2 f_B)) for the body and (1 + 2t/c) for fins;
-                  compressibility (1 - 0.1 M^2) below Mach 1, and the supersonic corrections above it
+                  compressibility (1 - 0.1 M^2) below Mach 0.9 and the supersonic corrections above 1.1,
+                  joined by a straight line so the friction doesn't jump at Mach 1
   base drag       0.12 + 0.13 M^2 below Mach 1 and 0.25 / M above, on the base area
                   (less the motor's own area while it is firing, because the exhaust fills it)
   fin edges       by cross-section: a square leading edge feels stagnation pressure, a rounded one
@@ -26,15 +27,22 @@ import numpy as np
 from .rocket import Rocket
 
 
+def _transonic_blend(subsonic: float, supersonic: float, mach: float) -> float:
+    """The subsonic value below Mach 0.9, the supersonic one above 1.1, and a straight line between them."""
+    w = min(max((mach - 0.9) / 0.2, 0.0), 1.0)
+    return (1 - w) * subsonic + w * supersonic
+
+
 def skin_friction(re: float, mach: float, roughness: float, length: float) -> float:
     if re < 1e4:
         cf = 1.48e-2
     else:
         cf = 1.0 / (1.50 * np.log(re) - 5.6) ** 2
-    cf_rough = 0.032 * (roughness / length) ** 0.2
-    if mach < 1.0:
-        return max(cf, cf_rough) * (1 - 0.1 * mach**2)
-    return max(cf / (1 + 0.15 * mach**2) ** 0.58, cf_rough / (1 + 0.18 * mach**2))
+    cf *= _transonic_blend(1 - 0.1 * mach**2, (1 + 0.15 * mach**2) ** -0.58, mach)
+    # the roughness-limited value blends between its two corrections as they stand at Mach 0.9 and 1.1
+    m_sub, m_sup = min(mach, 0.9), max(mach, 1.1)
+    cf_rough = 0.032 * (roughness / length) ** 0.2 * _transonic_blend(1 - 0.1 * m_sub**2, 1 / (1 + 0.18 * m_sup**2), mach)
+    return max(cf, cf_rough)
 
 
 def base_drag_coefficient(mach: float) -> float:
