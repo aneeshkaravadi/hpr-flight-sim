@@ -238,6 +238,42 @@ def test_pitch_oscillation_frequency_and_damping():
     assert decay == pytest.approx(sigma, rel=0.1)
 
 
+def test_canted_fins_spin_up_to_the_steady_roll_rate():
+    """Coasting at constant speed: forcing q A Kf cant balances damping q (p / V) Kd at p = A Kf cant V / Kd,
+    approached with time constant I_roll V / (q Kd)."""
+    r = rocket.load(ROCKET, cd_scale=0.0)
+    r.fins.cant = np.radians(1.0)
+    launch = flight.Launch(gravity=0.0, site_elevation=0.0)
+    V, z = 100.0, 1000.0
+    t0 = r.motor.burn_time + 1.0
+    y0 = np.concatenate([[0, 0, z], [V, 0, 0], [1.0, 0, 0, 0], [0, 0, 0]])
+    fl = flight.simulate(r, launch, state0=y0, t0=t0, t_end=t0 + 1.0, dt_coast=0.001)
+    air = atmosphere.isa(z)
+    kf, kd = r.roll_aero(V / air.a)
+    p_ss = r.ref_area * kf * r.fins.cant * V / kd
+    tau = r.mass_props(t0)[3] * V / (0.5 * air.rho * V**2 * kd)
+    assert tau < 0.1  # so one second is many time constants
+    assert fl.roll_rate[-1] == pytest.approx(p_ss, rel=1e-3)
+    k = np.searchsorted(fl.t, t0 + tau)  # first-order response: 1 - 1/e of the way there after one tau
+    assert fl.roll_rate[k] == pytest.approx(p_ss * (1 - np.exp(-(fl.t[k] - t0) / tau)), rel=0.02)
+
+
+def test_thrust_misalignment_torques_the_rocket_about_the_cg():
+    """At rest (no aero), a thrust line tilted by eps at the nozzle gives force F (cos eps, sin eps, 0) and
+    yaw moment (x_cg - x_nozzle) F sin eps, which pushes the nose the other way."""
+    eps = np.radians(0.5)
+    r = rocket.load(ROCKET, cd_scale=0.0, thrust_misalignment_deg=0.5)
+    launch = flight.Launch(gravity=0.0)
+    t = 0.5
+    y = np.concatenate([[0, 0, 100.0], [0, 0, 0], [1.0, 0, 0, 0], [0, 0, 0]])  # body axis along world x
+    d = flight._deriv_free(r, launch, t, y)
+    m, xcg, I_p, _ = r.mass_props(t)
+    F = r.motor.thrust(t, atmosphere.isa(launch.site_elevation + 100.0).P)
+    assert d[3:6] == pytest.approx(F * np.array([np.cos(eps), np.sin(eps), 0.0]) / m, rel=1e-9)
+    assert d[12] == pytest.approx((xcg - r.nozzle_station) * F * np.sin(eps) / I_p, rel=1e-9)
+    assert d[12] < 0
+
+
 def test_rocket_weathercocks_into_the_wind():
     r = rocket.load(ROCKET)
     fl = flight.simulate(r, flight.Launch(wind_speed=6.0, wind_from_deg=270.0))  # wind from the west

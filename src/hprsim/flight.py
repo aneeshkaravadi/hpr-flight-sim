@@ -10,7 +10,8 @@ Ascent (rigid body, quaternion attitude):
                  plus body lift q A K (A_plan / A) sin^2(alpha) at the planform centroid (Galejs)
   pitch damping  aerodynamic  0.5 rho V A sum CN_alpha,i (x_i - x_cg)^2
                  jet          m_dot (x_nozzle - x_cg)^2        (Barrowman / Mandell)
-  Roll is not modeled (no fin cant).
+  roll           canted fins drive it, strip-theory fin damping resists it (Barrowman)
+  thrust         along the body axis, or tilted by a misalignment angle at the nozzle
 
 On the rail the rocket only slides along the rail. After apogee the recovery
 system turns it into a point mass hanging under a drag area (Cd * A). A canopy
@@ -91,6 +92,7 @@ class Flight:
     mach: np.ndarray
     margin: np.ndarray  # static margin, calibers (NaN in descent)
     events: dict = field(default_factory=dict)
+    roll_rate: np.ndarray | None = None  # rad/s about the body axis (NaN in descent)
 
     @property
     def apogee(self) -> float:
@@ -130,7 +132,7 @@ def quat_from_to(a, b):
 
 # ---------------------------------------------------------------- dynamics
 
-def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg, air=None):
+def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg, air=None, p_roll=0.0):
     """Aerodynamic force (world), moment about the CG (body), damping coefficient, and diagnostics."""
     if air is None:
         air = isa(launch.site_elevation + r[2], launch.dT)
@@ -158,6 +160,9 @@ def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg, air=None):
             force += Rm @ n_lift
             moment += _cross((xcg - rocket.planform[1], 0.0, 0.0), n_lift)
     damping = 0.5 * air.rho * V * A * (S2 - 2 * xcg * S1 + xcg**2 * cna)
+    if rocket.fins.cant or p_roll:
+        kf, kd = rocket.roll_aero(min(mach, 0.9))
+        moment[0] += qd * A * kf * rocket.fins.cant - qd * (p_roll / V) * kd
     return force, moment, damping, alpha, mach
 
 
@@ -167,14 +172,15 @@ def _deriv_free(rocket: Rocket, launch: Launch, t, y):
     Rm = quat_to_mat(q)
     m, xcg, I_p, I_r = rocket.mass_props(t)
     air = isa(launch.site_elevation + r[2], launch.dT)
-    force = np.array([0.0, 0.0, -m * launch.gravity]) + rocket.motor.thrust(t, air.P) * Rm[:, 0]
-    fa, moment, damp, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg, air)
+    thrust = rocket.motor.thrust(t, air.P) * rocket.thrust_direction  # body frame
+    force = np.array([0.0, 0.0, -m * launch.gravity]) + Rm @ thrust
+    fa, moment, damp, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg, air, p_roll=w[0])
     force += fa
+    moment += _cross((xcg - rocket.nozzle_station, 0.0, 0.0), thrust)  # zero unless the thrust is misaligned
     damp += rocket.motor.mass_flow(t) * (rocket.nozzle_station - xcg) ** 2
     moment[1:] -= damp * w[1:]
     inertia = np.array([I_r, I_p, I_p])
     w_dot = (moment - _cross(w, inertia * w)) / inertia
-    w_dot[0] = 0.0
     q_dot = 0.5 * quat_mul(q, np.array([0.0, *w]))
     return np.concatenate([v, force / m, q_dot, w_dot])
 
@@ -303,7 +309,7 @@ def simulate(rocket: Rocket, launch: Launch = None, recovery: Recovery = None, d
     t = t0
     burn = rocket.motor.burn_time
     ev: dict = {}
-    rec = {k: [] for k in ("t", "pos", "vel", "tilt", "aoa", "mach", "margin")}
+    rec = {k: [] for k in ("t", "pos", "vel", "tilt", "aoa", "mach", "margin", "roll")}
 
     def record(y, t):
         rec["t"].append(t)
@@ -316,6 +322,7 @@ def simulate(rocket: Rocket, launch: Launch = None, recovery: Recovery = None, d
         rec["aoa"].append(np.degrees(alpha))
         rec["mach"].append(mach)
         rec["margin"].append(rocket.static_margin(t, min(mach, 0.9)))
+        rec["roll"].append(y[10])
 
     record(y, t)
     max_speed = max_acc = 0.0
@@ -373,10 +380,10 @@ def rec_descent(rec, y, t):
     rec["t"].append(t)
     rec["pos"].append(y[0:3].copy())
     rec["vel"].append(y[3:6].copy())
-    for k in ("tilt", "aoa", "margin", "mach"):
+    for k in ("tilt", "aoa", "margin", "mach", "roll"):
         rec[k].append(np.nan)
 
 
 def _pack(rec, ev) -> Flight:
     return Flight(np.array(rec["t"]), np.array(rec["pos"]), np.array(rec["vel"]), np.array(rec["tilt"]),
-                  np.array(rec["aoa"]), np.array(rec["mach"]), np.array(rec["margin"]), ev)
+                  np.array(rec["aoa"]), np.array(rec["mach"]), np.array(rec["margin"]), ev, np.array(rec["roll"]))

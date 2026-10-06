@@ -136,6 +136,7 @@ class FinSet:
     mass: float  # all fins together
     station: float  # root leading edge
     body_diameter: float
+    cant: float = 0.0  # rad, each fin's cant angle; positive spins the rocket positively about its nose axis
 
     @property
     def mid_chord_length(self) -> float:
@@ -157,6 +158,23 @@ class FinSet:
             1 + np.sqrt(1 + (beta * 2 * self.mid_chord_length / (Cr + Ct)) ** 2))
         xf = xt / 3 * (Cr + 2 * Ct) / (Cr + Ct) + (Cr + Ct - Cr * Ct / (Cr + Ct)) / 6
         return float(cna), self.station + xf
+
+    def roll_coefficients(self, ref_diameter: float, mach: float = 0.0):
+        """Roll moment = q A_ref Kf cant - q (p / V) Kd, returning (Kf, Kd).
+
+        Forcing (Barrowman): each canted fin makes normal force CNa1 * cant at its mean aerodynamic chord,
+        a distance y_MAC + r_body from the axis. Damping (strip theory, Barrowman): rolling at p, a fin strip
+        at radius r meets the air at an extra angle p r / V and pushes back with the 2-D slope 2 pi / beta.
+        """
+        Cr, Ct, s, n = self.root_chord, self.tip_chord, self.span, self.count
+        rt = self.body_diameter / 2
+        beta = np.sqrt(1 - min(mach, 0.8) ** 2)
+        cna1 = 8 * (s / ref_diameter) ** 2 / (1 + np.sqrt(1 + (beta * 2 * self.mid_chord_length / (Cr + Ct)) ** 2))
+        y_mac = s / 3 * (Cr + 2 * Ct) / (Cr + Ct)
+        y = np.linspace(0.0, s, 401)
+        chord = Cr - (Cr - Ct) * y / s
+        kd = n * 2 * np.pi / beta * float(np.trapezoid(chord * (rt + y) ** 2, y))
+        return n * cna1 * (y_mac + rt), kd
 
     def mass_props(self):
         Cr, Ct, xt, s = self.root_chord, self.tip_chord, self.sweep, self.span
@@ -193,6 +211,8 @@ class Rocket:
     roughness: float = 60e-6  # m, regular paint
     cd_scale: float = 1.0  # multiplier on the drag model (calibrated against flight data)
     body_lift_k: float = 1.1  # Galejs body-lift constant; 0 turns body lift off
+    thrust_misalignment_deg: float = 0.0  # angle between the thrust line and the body axis
+    thrust_misalignment_azimuth_deg: float = 0.0  # which way it tilts, measured from body +y toward +z
     dry_mass_scale: float = 1.0  # for Monte Carlo
     _dry: tuple = field(init=False, repr=False)
     _aero_cache: dict = field(init=False, repr=False, default_factory=dict)
@@ -283,6 +303,19 @@ class Rocket:
             self._aero_cache[key] = (cna, xcp, S1, S2)
         return self._aero_cache[key]
 
+    def roll_aero(self, mach: float = 0.0):
+        """(Kf, Kd) for the fin set at this Mach number (see FinSet.roll_coefficients)."""
+        key = ("roll", round(mach, 2))
+        if key not in self._aero_cache:
+            self._aero_cache[key] = self.fins.roll_coefficients(self.diameter, key[1])
+        return self._aero_cache[key]
+
+    @cached_property
+    def thrust_direction(self) -> np.ndarray:
+        """Unit thrust vector in the body frame (x along the axis toward the nose)."""
+        e, a = np.radians(self.thrust_misalignment_deg), np.radians(self.thrust_misalignment_azimuth_deg)
+        return np.array([np.cos(e), np.sin(e) * np.cos(a), np.sin(e) * np.sin(a)])
+
     def static_margin(self, t: float = 0.0, mach: float = 0.0) -> float:
         """(CP - CG) / diameter, in calibers. Positive = stable."""
         _, xcg, _, _ = self.mass_props(t)
@@ -321,7 +354,7 @@ def from_config(cfg: dict, base_dir: Path, motor: Motor | None = None, motor_fil
     f = cfg["fins"]
     fin_station = nose.length + body.length - f["root_chord"] - f.get("aft_offset", 0.0)
     fins = FinSet(f["count"], f["root_chord"], f["tip_chord"], f["span"], f["sweep"], f["thickness"], f["mass"],
-                  fin_station, d)
+                  fin_station, d, cant=np.radians(f.get("cant_deg", 0.0)))
     masses = [PointMass(k, v["mass"], v["station"], v.get("inertia", 0.0), v.get("roll_inertia", 0.0))
               for k, v in cfg.get("mass", {}).items()]
     mcfg = cfg["motor"]
@@ -338,5 +371,8 @@ def from_config(cfg: dict, base_dir: Path, motor: Motor | None = None, motor_fil
     if d_exit and not motor.exit_area:
         motor.exit_area = np.pi * d_exit**2 / 4
     aft = mcfg.get("aft_station", nose.length + body.length + mcfg.get("overhang", 0.0))
-    return Rocket(cfg.get("name", "rocket"), nose, body, fins, masses, motor, aft,
-                  roughness=cfg.get("roughness", 60e-6), **overrides)
+    kwargs = {"roughness": cfg.get("roughness", 60e-6),
+              "thrust_misalignment_deg": mcfg.get("misalignment_deg", 0.0),
+              "thrust_misalignment_azimuth_deg": mcfg.get("misalignment_azimuth_deg", 0.0)}
+    kwargs.update(overrides)
+    return Rocket(cfg.get("name", "rocket"), nose, body, fins, masses, motor, aft, **kwargs)
