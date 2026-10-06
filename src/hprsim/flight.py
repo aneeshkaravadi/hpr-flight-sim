@@ -6,7 +6,8 @@ Body frame: x_b along the rocket axis toward the nose.
 Ascent (rigid body, quaternion attitude):
   m dv/dt  = thrust * x_b + gravity + drag (opposite the airspeed) + normal force at the CP
   I dw/dt  = M - w x (I w)
-  normal force   N = q A CN_alpha * alpha, acting at the CP, pushing the body toward the crossflow
+  normal force   N = q A CN_alpha * alpha, acting at the CP, pushing the body toward the crossflow,
+                 plus body lift q A K (A_plan / A) sin^2(alpha) at the planform centroid (Galejs)
   pitch damping  aerodynamic  0.5 rho V A sum CN_alpha,i (x_i - x_cg)^2
                  jet          m_dot (x_nozzle - x_cg)^2        (Barrowman / Mandell)
   Roll is not modeled (no fin cant).
@@ -136,6 +137,10 @@ def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg, air=None):
         n_body = -qd * A * cna * alpha * ut / utm
         force += Rm @ n_body
         moment += _cross((xcg - xcp, 0.0, 0.0), n_body)
+        if rocket.body_lift_k:
+            n_lift = -qd * A * rocket.body_lift_cn(alpha) * ut / utm  # Galejs: grows as sin^2(alpha)
+            force += Rm @ n_lift
+            moment += _cross((xcg - rocket.planform[1], 0.0, 0.0), n_lift)
     damping = 0.5 * air.rho * V * A * (S2 - 2 * xcg * S1 + xcg**2 * cna)
     return force, moment, damping, alpha, mach
 

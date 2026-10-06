@@ -112,6 +112,37 @@ def test_rectangular_fin_cp_is_quarter_chord_and_slope_matches_hand_calc():
     assert cna == pytest.approx(by_hand, rel=1e-12)
 
 
+def test_cone_planform_area_and_centroid():
+    """Side view of a cone is a triangle: area R * L, centroid 2/3 of the way back."""
+    n = rocket.NoseCone("conical", 0.3, 0.08, 0.1)
+    area, x = n.planform
+    assert area == pytest.approx(0.04 * 0.3, rel=1e-6)
+    assert x == pytest.approx(0.2, rel=1e-6)
+
+
+def test_body_lift_force_and_moment_follow_galejs():
+    """Body lift adds q * K * A_plan * sin^2(alpha) against the crossflow, acting at the planform centroid."""
+    with_lift, without = rocket.load(ROCKET), rocket.load(ROCKET, body_lift_k=0.0)
+    launch = flight.Launch(site_elevation=0.0)
+    V, alpha = 50.0, np.radians(20.0)
+    v = V * np.array([np.cos(alpha), np.sin(alpha), 0.0])  # body axis along world x, crossflow along +y
+    xcg = with_lift.mass_props(0.0)[1]
+    f1, m1, *_ = flight._aero(with_lift, launch, 1.0, np.zeros(3), v, np.eye(3), xcg)
+    f0, m0, *_ = flight._aero(without, launch, 1.0, np.zeros(3), v, np.eye(3), xcg)
+    q = 0.5 * atmosphere.isa(0.0).rho * V**2
+    a_plan, x_plan = with_lift.planform
+    N = q * 1.1 * a_plan * np.sin(alpha) ** 2
+    assert f1 - f0 == pytest.approx([0.0, -N, 0.0], abs=1e-9 * N)
+    assert (m1 - m0)[2] == pytest.approx(-(xcg - x_plan) * N, rel=1e-9)
+
+
+def test_body_lift_moves_the_cp_forward_at_high_angle():
+    r = rocket.load(ROCKET)
+    xcp = r.stability(0.0)[1]
+    assert r.cp_at(np.radians(0.01)) == pytest.approx(xcp, abs=1e-3)  # its share grows with alpha, so tiny here
+    assert r.cp_at(np.radians(20.0)) < xcp - 0.05  # the planform centroid is well ahead of the fins
+
+
 def test_example_rocket_is_stable_and_margin_grows_during_burn():
     r = rocket.load(ROCKET)
     assert 1.0 < r.static_margin(0.0) < r.static_margin(r.motor.burn_time + 1)

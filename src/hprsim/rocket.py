@@ -7,8 +7,11 @@ the body cross-section A_ref = pi d^2 / 4.
 Barrowman's method (J. Barrowman, "The Practical Calculation of the
 Aerodynamic Characteristics of Slender Finned Vehicles", 1967) adds up the
 normal-force slope of the nose and the fins; the center of pressure (CP) is
-their slope-weighted average position. Body-tube lift is neglected, which is
-standard for small angles of attack and slightly conservative.
+their slope-weighted average position. That linear model ignores the body's own
+lift, which grows as sin^2(alpha) and matters at the angles a rocket sees leaving
+a short rail in wind. It is added separately (Galejs, "Wind Instability: What
+Barrowman Left Out", 1999):  CN_body = K (A_planform / A_ref) sin^2(alpha),  with
+K = 1.1, acting at the centroid of the planform area.
 """
 from __future__ import annotations
 
@@ -63,6 +66,13 @@ class NoseCone:
     def wetted_area(self) -> float:
         x, r, ds = self._profile()
         return float(np.sum(2 * np.pi * r * ds))
+
+    @cached_property
+    def planform(self) -> tuple[float, float]:
+        """Side-view (projected) area and the station of its centroid."""
+        x, r, _ = self._profile()
+        area = float(np.trapezoid(2 * r, x))
+        return area, self.station + float(np.trapezoid(2 * r * x, x)) / area
 
     def cnalpha_cp(self):
         """Slender-body theory: CN_alpha = 2, CP = L - V / A_base for any profile."""
@@ -158,6 +168,7 @@ class Rocket:
     motor_aft_station: float  # where the motor's nozzle end sits
     roughness: float = 60e-6  # m, regular paint
     cd_scale: float = 1.0  # multiplier on the drag model (calibrated against flight data)
+    body_lift_k: float = 1.1  # Galejs body-lift constant; 0 turns body lift off
     dry_mass_scale: float = 1.0  # for Monte Carlo
     _dry: tuple = field(init=False, repr=False)
     _aero_cache: dict = field(init=False, repr=False, default_factory=dict)
@@ -191,6 +202,26 @@ class Rocket:
     @property
     def nozzle_station(self) -> float:
         return self.motor_aft_station
+
+    @cached_property
+    def planform(self) -> tuple[float, float]:
+        """Side-view area of nose + body and the station of its centroid (where body lift acts)."""
+        a_n, x_n = self.nose.planform
+        a_b = self.body.diameter * self.body.length
+        x_b = self.body.station + self.body.length / 2
+        return a_n + a_b, (a_n * x_n + a_b * x_b) / (a_n + a_b)
+
+    def body_lift_cn(self, alpha: float) -> float:
+        """Body normal-force coefficient (on A_ref) at angle of attack alpha, rad."""
+        return self.body_lift_k * self.planform[0] / self.ref_area * np.sin(alpha) ** 2
+
+    def cp_at(self, alpha: float, mach: float = 0.0) -> float:
+        """Center of pressure including body lift at a finite angle of attack (rad)."""
+        cna, xcp, _, _ = self.stability(mach)
+        cn_lin, cn_body = cna * alpha, self.body_lift_cn(alpha)
+        if cn_lin + cn_body == 0:
+            return xcp
+        return (cn_lin * xcp + cn_body * self.planform[1]) / (cn_lin + cn_body)
 
     # -- mass properties
     def mass_props(self, t: float):
