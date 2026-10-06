@@ -24,7 +24,7 @@ def read_altitude_log(path: str | Path) -> tuple[np.ndarray, np.ndarray]:
     """Time (s) and altitude above ground (m) from an altimeter CSV or an OpenRocket CSV export.
 
     Finds the first column whose header contains 'time' and the first containing 'alt'.
-    A header mentioning 'ft' or 'feet' is converted to metres.
+    A header mentioning 'ft' or 'feet' is converted to meters.
     """
     rows = Path(path).read_text().splitlines()
     header_idx = next(i for i, r in enumerate(rows) if "time" in r.lower() and "alt" in r.lower())

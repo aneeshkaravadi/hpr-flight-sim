@@ -9,7 +9,7 @@ Ascent (rigid body, quaternion attitude):
   normal force   N = q A CN_alpha * alpha, acting at the CP, pushing the body toward the crossflow
   pitch damping  aerodynamic  0.5 rho V A sum CN_alpha,i (x_i - x_cg)^2
                  jet          m_dot (x_nozzle - x_cg)^2        (Barrowman / Mandell)
-  Roll is not modelled (no fin cant).
+  Roll is not modeled (no fin cant).
 
 On the rail the rocket only slides along the rail. After apogee the recovery
 system turns it into a point mass hanging under a drag area (Cd * A).

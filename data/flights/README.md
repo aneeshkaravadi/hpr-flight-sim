@@ -1,6 +1,6 @@
 # Flight data
 
-Altimeter logs for calibrating the drag model. `examples/compare_flight.py` reads any CSV with a time column and an altitude column (it finds headers containing "time" and "alt"). It also accepts OpenRocket's CSV export, and converts feet to metres if the header says "ft".
+Altimeter logs for calibrating the drag model. `examples/compare_flight.py` reads any CSV with a time column and an altitude column (it finds headers containing "time" and "alt"). It also accepts OpenRocket's CSV export, and converts feet to meters if the header says "ft".
 
 ```bash
 python examples/compare_flight.py rockets/my_rocket.toml data/motors/AeroTech_I284W.eng data/flights/my_flight.csv \

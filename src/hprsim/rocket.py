@@ -6,7 +6,7 @@ the body cross-section A_ref = pi d^2 / 4.
 
 Barrowman's method (J. Barrowman, "The Practical Calculation of the
 Aerodynamic Characteristics of Slender Finned Vehicles", 1967) adds up the
-normal-force slope of the nose and the fins; the centre of pressure (CP) is
+normal-force slope of the nose and the fins; the center of pressure (CP) is
 their slope-weighted average position. Body-tube lift is neglected, which is
 standard for small angles of attack and slightly conservative.
 """

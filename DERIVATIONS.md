@@ -24,7 +24,7 @@ Checked by: the mass flow integrates to exactly the propellant loaded, and the b
 
 ## 3. Mass properties (`rocket.py`)
 
-Stations are measured from the nose tip, increasing toward the tail. Each part is modelled as follows:
+Stations are measured from the nose tip, increasing toward the tail. Each part is modeled as follows:
 
 | Part | Model |
 |---|---|
@@ -37,7 +37,7 @@ The total pitch inertia about the moving CG is $I = \sum I_{cm,i} + \sum m_i x_i
 
 ## 4. Stability: Barrowman's equations (`rocket.py`)
 
-**Nose cone.** Slender-body theory gives a normal-force slope of exactly $C_{N\alpha} = 2$ per radian, whatever the shape. The centre of pressure (CP) also has a general formula,
+**Nose cone.** Slender-body theory gives a normal-force slope of exactly $C_{N\alpha} = 2$ per radian, whatever the shape. The center of pressure (CP) also has a general formula,
 
 $$X_{CP} = L - \frac{V}{A_\text{base}}$$
 
@@ -97,9 +97,9 @@ $$C = \frac{\rho V A}{2}\sum_i C_{N\alpha,i}(x_i - x_{cg})^2 + \dot m\,(x_\text{
 
 $$m\dot{\vec v} = \sum\vec F, \qquad I\dot\omega = M - \omega\times I\omega, \qquad \dot q = \tfrac12\,q\otimes(0, \omega)$$
 
-Roll is not modelled. Integration is classic 4th-order Runge–Kutta, with a 2 ms step during the burn and 10 ms during the coast. Halving both steps changes the apogee by under 0.1% (`test_time_step_is_converged`).
+Roll is not modeled. Integration is classic 4th-order Runge–Kutta, with a 2 ms step during the burn and 10 ms during the coast. Halving both steps changes the apogee by under 0.1% (`test_time_step_is_converged`).
 
-**Launch rail.** Until the rocket has travelled the rail length, it can only slide along the rail and cannot rotate. The exit moment is interpolated within the time step (`test_vertical_flight_without_drag_matches_kinematics` checks $v = \sqrt{2aL}$ to 0.2%).
+**Launch rail.** Until the rocket has traveled the rail length, it can only slide along the rail and cannot rotate. The exit moment is interpolated within the time step (`test_vertical_flight_without_drag_matches_kinematics` checks $v = \sqrt{2aL}$ to 0.2%).
 
 ## 7. Checking the rotational dynamics
 

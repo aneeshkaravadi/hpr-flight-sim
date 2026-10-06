@@ -24,7 +24,7 @@ The example is a typical 3-inch dual-deploy rocket with a 38 mm motor mount, flo
 
 ![Flight profiles](docs/figures/flight_profiles.png)
 
-The stability margin isn't one number. It climbs while the motor burns, because the propellant mass leaves from the back and the centre of gravity moves forward. It also climbs with speed, because the fins make more lift near Mach 0.7. Then it settles once the rocket slows down.
+The stability margin isn't one number. It climbs while the motor burns, because the propellant mass leaves from the back and the center of gravity moves forward. It also climbs with speed, because the fins make more lift near Mach 0.7. Then it settles once the rocket slows down.
 
 <img src="docs/figures/stability_margin.png" width="60%">
 

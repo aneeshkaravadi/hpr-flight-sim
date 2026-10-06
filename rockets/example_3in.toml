@@ -1,6 +1,6 @@
 # A typical 3-inch (78.7 mm OD) dual-deploy high-power rocket with a 38 mm motor mount.
 # Illustrative numbers in the range of common kits, NOT a specific kit or my club's rocket.
-# Stations are measured from the nose tip, in metres; masses in kg.
+# Stations are measured from the nose tip, in meters; masses in kg.
 name = "Example 3-inch dual-deploy rocket"
 roughness = 60e-6          # regular paint finish
 
