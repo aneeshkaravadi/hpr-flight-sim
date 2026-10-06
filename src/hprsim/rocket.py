@@ -246,6 +246,9 @@ def load(path: str | Path, motor: Motor | None = None, motor_file: str | Path | 
     if motor is None:
         mf = motor_file or (path.parent / cfg["motor"]["file"])
         motor = Motor.from_eng(mf)
+    d_exit = cfg["motor"].get("nozzle_exit_diameter", 0.0)
+    if d_exit and not motor.exit_area:
+        motor.exit_area = np.pi * d_exit**2 / 4
     aft = nose.length + body.length + cfg["motor"].get("overhang", 0.0)
     return Rocket(cfg.get("name", path.stem), nose, body, fins, masses, motor, aft,
                   roughness=cfg.get("roughness", 60e-6), **overrides)

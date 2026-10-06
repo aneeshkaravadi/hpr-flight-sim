@@ -45,6 +45,39 @@ def test_mass_flow_burns_exactly_the_propellant():
     assert m.prop_remaining(m.burn_time) == 0.0
 
 
+def test_pressure_thrust_correction_only_while_burning():
+    m = motor.Motor.from_eng(ROOT / "data" / "motors" / "AeroTech_I284W.eng")
+    m.exit_area = np.pi * 0.015**2 / 4
+    p = atmosphere.isa(1500.0).P
+    assert m.thrust(1.0, p) - m.thrust(1.0) == pytest.approx((m.p_ref - p) * m.exit_area, rel=1e-12)
+    assert m.thrust(m.burn_time + 0.1, p) == 0.0
+    t = np.linspace(0, m.burn_time, 20001)  # pressure thrust doesn't burn extra propellant
+    assert np.trapezoid([m.mass_flow(x) for x in t], t) == pytest.approx(m.prop_mass, rel=1e-3)
+
+
+def test_pressure_thrust_adds_the_expected_speed():
+    """No gravity or drag, constant mass: extra speed = (A_e / m) * integral of (p_ref - p) dt while burning."""
+    Ae = np.pi * 0.02**2 / 4
+    plain, corrected = constant_thrust_motor(F=400.0, burn=1.0), constant_thrust_motor(F=400.0, burn=1.0)
+    corrected.exit_area = Ae
+    launch = flight.Launch(gravity=0.0, site_elevation=3000.0)
+    runs = [flight.simulate(rocket.load(ROCKET, motor=m, cd_scale=0.0), launch, t_end=1.0, ascent_only=True)
+            for m in (plain, corrected)]
+    dv = np.linalg.norm(runs[1].vel[-1]) - np.linalg.norm(runs[0].vel[-1])
+    mass = rocket.load(ROCKET, motor=corrected).mass_props(0)[0]
+    t, z = runs[1].t, runs[1].pos[:, 2]
+    dp = [(corrected.p_ref - atmosphere.isa(3000.0 + zi).P) * (corrected.thrust(ti) > 0) for ti, zi in zip(t, z)]
+    assert dv == pytest.approx(Ae / mass * np.trapezoid(dp, t), rel=2e-3)
+
+
+def test_toml_nozzle_exit_diameter_sets_exit_area(tmp_path):
+    text = ROCKET.read_text().replace('overhang = 0.0', 'overhang = 0.0\nnozzle_exit_diameter = 0.016')
+    text = text.replace('file = "../data/', f'file = "{ROOT}/data/')
+    f = tmp_path / "r.toml"
+    f.write_text(text)
+    assert rocket.load(f).motor.exit_area == pytest.approx(np.pi * 0.016**2 / 4)
+
+
 # ---------------------------------------------------------------- Barrowman
 
 def test_conical_nose_cp_is_two_thirds_length():

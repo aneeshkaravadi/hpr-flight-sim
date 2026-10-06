@@ -5,6 +5,12 @@ propellant left at time t is  m_p0 * (1 - I(t) / I_total).  That is the
 standard assumption in OpenRocket and RockSim, and it makes the mass flow
 m_dot = m_p0 * F(t) / I_total, i.e. a constant effective exhaust velocity
 c = I_total / m_p0.
+
+Thrust at altitude: the curve is measured on a static test stand near sea
+level. Higher up, the nozzle exhausts into lower ambient pressure and gains
+pressure thrust,  F = F_curve + (p_ref - p_ambient) * A_exit,  while the mass
+flow is set by the chamber and doesn't change. A .eng file doesn't include the
+nozzle exit area, so it is an input (exit_area = 0 turns the correction off).
 """
 from __future__ import annotations
 
@@ -24,6 +30,8 @@ class Motor:
     t: np.ndarray  # s
     F: np.ndarray  # N
     impulse_scale: float = 1.0  # for Monte Carlo: scales thrust (and burn rate) uniformly
+    exit_area: float = 0.0  # m^2, nozzle exit; 0 = no ambient-pressure correction
+    p_ref: float = 101325.0  # Pa, ambient pressure the thrust curve was measured at
     _I: np.ndarray = field(init=False, repr=False)
 
     def __post_init__(self):
@@ -60,10 +68,14 @@ class Motor:
     def exhaust_velocity(self) -> float:
         return self.total_impulse / self.prop_mass
 
-    def thrust(self, t: float) -> float:
+    def thrust(self, t: float, p_ambient: float | None = None) -> float:
+        """Thrust at time t. Pass the ambient pressure to include the altitude correction."""
         if t < 0 or t >= self.t[-1]:
             return 0.0
-        return float(np.interp(t, self.t, self.F)) * self.impulse_scale
+        F = float(np.interp(t, self.t, self.F)) * self.impulse_scale
+        if p_ambient is not None and self.exit_area > 0 and F > 0:
+            F += (self.p_ref - p_ambient) * self.exit_area
+        return F
 
     def prop_remaining(self, t: float) -> float:
         if t <= 0:
@@ -73,4 +85,5 @@ class Motor:
         return self.prop_mass * (1.0 - float(np.interp(t, self.t, self._I)) / float(self._I[-1]))
 
     def mass_flow(self, t: float) -> float:
+        """From the measured curve only: pressure thrust doesn't burn extra propellant."""
         return self.thrust(t) / self.exhaust_velocity

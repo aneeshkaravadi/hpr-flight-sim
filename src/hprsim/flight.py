@@ -107,9 +107,10 @@ def quat_from_to(a, b):
 
 # ---------------------------------------------------------------- dynamics
 
-def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg):
+def _aero(rocket: Rocket, launch: Launch, t, r, v, Rm, xcg, air=None):
     """Aerodynamic force (world), moment about the CG (body), damping coefficient, and diagnostics."""
-    air = isa(launch.site_elevation + r[2], launch.dT)
+    if air is None:
+        air = isa(launch.site_elevation + r[2], launch.dT)
     v_air = v - launch.wind(r[2])
     u = Rm.T @ v_air
     V = float(np.linalg.norm(u))
@@ -138,8 +139,9 @@ def _deriv_free(rocket: Rocket, launch: Launch, t, y):
     q = q / np.linalg.norm(q)
     Rm = quat_to_mat(q)
     m, xcg, I_p, I_r = rocket.mass_props(t)
-    force = np.array([0.0, 0.0, -m * launch.gravity]) + rocket.motor.thrust(t) * Rm[:, 0]
-    fa, moment, damp, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg)
+    air = isa(launch.site_elevation + r[2], launch.dT)
+    force = np.array([0.0, 0.0, -m * launch.gravity]) + rocket.motor.thrust(t, air.P) * Rm[:, 0]
+    fa, moment, damp, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg, air)
     force += fa
     damp += rocket.motor.mass_flow(t) * (rocket.nozzle_station - xcg) ** 2
     moment[1:] -= damp * w[1:]
@@ -155,8 +157,9 @@ def _deriv_rail(rocket: Rocket, launch: Launch, t, y, u_rail):
     q = y[6:10] / np.linalg.norm(y[6:10])
     Rm = quat_to_mat(q)
     m, xcg, _, _ = rocket.mass_props(t)
-    force = np.array([0.0, 0.0, -m * launch.gravity]) + rocket.motor.thrust(t) * Rm[:, 0]
-    fa, _, _, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg)
+    air = isa(launch.site_elevation + r[2], launch.dT)
+    force = np.array([0.0, 0.0, -m * launch.gravity]) + rocket.motor.thrust(t, air.P) * Rm[:, 0]
+    fa, _, _, _, _ = _aero(rocket, launch, t, r, v, Rm, xcg, air)
     a = float(np.dot(force + fa, u_rail)) / m
     if a < 0 and np.dot(v, u_rail) <= 1e-9:
         a = 0.0  # still sitting on the rail: thrust hasn't beaten weight yet
