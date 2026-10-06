@@ -102,6 +102,20 @@ def test_parabolic_series_nose_cp_is_seven_fifteenths():
     assert n.cnalpha_cp()[1] == pytest.approx(0.38 * 7 / 15, rel=1e-4)
 
 
+@pytest.mark.parametrize("shape, param, cp_fraction", [
+    ("ellipsoid", None, 1 / 3),  # V = 2/3 pi R^2 L
+    ("power", 0.5, 0.5),  # V = pi R^2 L / (2n + 1), so CP = 2n / (2n + 1) L
+    ("power", 0.75, 0.6),
+    ("parabolic", 0.5, None),
+    ("haack", 0.0, 0.5),  # Von Karman: V = pi R^2 L / 2
+])
+def test_nose_shapes_cp_from_volume(shape, param, cp_fraction):
+    n = rocket.NoseCone(shape, 0.4, 0.1, 0.1, param=param)
+    if cp_fraction is None:  # parabolic series, K = 1/2: integrate r^2 = R^2 (2u - u^2/2)^2 / (3/2)^2 by hand
+        cp_fraction = 1 - (4 / 3 - 1 / 2 + 1 / 20) / (9 / 4)
+    assert n.cnalpha_cp()[1] == pytest.approx(cp_fraction * 0.4, rel=1e-4)
+
+
 def test_rectangular_fin_cp_is_quarter_chord_and_slope_matches_hand_calc():
     c, s, d, n = 0.10, 0.08, 0.08, 4
     f = rocket.FinSet(n, c, c, s, 0.0, 0.003, 0.1, station=1.0, body_diameter=d)

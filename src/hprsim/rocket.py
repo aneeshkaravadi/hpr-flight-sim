@@ -29,27 +29,45 @@ from .motor import Motor
 
 @dataclass
 class NoseCone:
-    shape: str  # "conical", "ogive" (tangent), "vonkarman", "parabolic" (OpenRocket's parabolic series, K = 1)
+    """Shapes follow OpenRocket's definitions. ``param`` is the shape parameter where one applies:
+
+    conical, ogive (tangent), ellipsoid
+    power      r = R u^n                          (param = n, 0 < n <= 1)
+    parabolic  r = R (2u - K u^2) / (2 - K)       (param = K; K = 1 is the full parabola)
+    haack      theta = arccos(1 - 2u),  r = R / sqrt(pi) * sqrt(theta - sin(2 theta) / 2 + C sin^3 theta)
+               (param = C; 0 is Von Karman, 1/3 is LV-Haack). "vonkarman" is haack with C = 0.
+    with u = x / L measured from the tip.
+    """
+
+    shape: str
     length: float
     diameter: float
     mass: float
     station: float = 0.0  # tip position
+    param: float | None = None
 
     def radius(self, x):
         """Profile radius at distance x from the tip."""
         L, R = self.length, self.diameter / 2
         x = np.clip(np.asarray(x, float), 0.0, L)
+        u = x / L
         if self.shape == "conical":
-            return R * x / L
+            return R * u
         if self.shape == "ogive":
             rho = (R**2 + L**2) / (2 * R)
             return np.sqrt(rho**2 - (L - x) ** 2) + R - rho
-        if self.shape == "vonkarman":
-            theta = np.arccos(1 - 2 * x / L)
-            return R / np.sqrt(np.pi) * np.sqrt(theta - np.sin(2 * theta) / 2)
+        if self.shape == "ellipsoid":
+            return R * np.sqrt(np.clip(2 * u - u**2, 0.0, None))
+        if self.shape == "power":
+            return R * u ** (0.5 if self.param is None else self.param)
         if self.shape == "parabolic":
-            return R * (2 * x / L - (x / L) ** 2)
-        raise ValueError(self.shape)
+            K = 1.0 if self.param is None else self.param
+            return R * (2 * u - K * u**2) / (2 - K)
+        if self.shape in ("haack", "vonkarman"):
+            C = 0.0 if (self.shape == "vonkarman" or self.param is None) else self.param
+            theta = np.arccos(1 - 2 * u)
+            return R / np.sqrt(np.pi) * np.sqrt(theta - np.sin(2 * theta) / 2 + C * np.sin(theta) ** 3)
+        raise ValueError(f"unknown nose cone shape {self.shape!r}")
 
     def _profile(self, n=2001):
         x = np.linspace(0, self.length, n)
@@ -267,7 +285,8 @@ def load(path: str | Path, motor: Motor | None = None, motor_file: str | Path | 
     path = Path(path)
     cfg = tomllib.loads(path.read_text())
     d = cfg["body"]["diameter"]
-    nose = NoseCone(cfg["nose"]["shape"], cfg["nose"]["length"], d, cfg["nose"]["mass"])
+    nose = NoseCone(cfg["nose"]["shape"], cfg["nose"]["length"], d, cfg["nose"]["mass"],
+                    param=cfg["nose"].get("param"))
     body = BodyTube(cfg["body"]["length"], d, cfg["body"]["mass"], station=nose.length)
     f = cfg["fins"]
     fin_station = nose.length + body.length - f["root_chord"] - f.get("aft_offset", 0.0)
