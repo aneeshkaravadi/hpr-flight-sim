@@ -170,9 +170,11 @@ class PointMass:
     name: str
     mass: float
     station: float
+    inertia: float = 0.0  # transverse, about its own CG (0 for a true point mass)
+    roll_inertia: float = 0.0
 
     def mass_props(self):
-        return self.mass, self.station, 0.0, 0.0
+        return self.mass, self.station, self.inertia, self.roll_inertia
 
 
 # ---------------------------------------------------------------- rocket
@@ -283,9 +285,28 @@ class Rocket:
 # ---------------------------------------------------------------- loading
 
 def load(path: str | Path, motor: Motor | None = None, motor_file: str | Path | None = None, **overrides) -> Rocket:
-    """Build a Rocket from a TOML description (see rockets/example_3in.toml)."""
+    """Build a Rocket from a TOML description (see rockets/example_3in.toml) or an OpenRocket .ork file."""
     path = Path(path)
-    cfg = tomllib.loads(path.read_text())
+    if path.suffix.lower() == ".ork":
+        from . import ork
+        cfg = ork.read(path)
+    else:
+        cfg = tomllib.loads(path.read_text())
+    return from_config(cfg, path.parent, motor, motor_file, **overrides)
+
+
+def find_motor(designation: str, *dirs: Path) -> Path:
+    """The .eng file whose name contains the motor designation (e.g. 'J420R' -> AeroTech_J420R.eng)."""
+    for d in dirs:
+        for f in sorted(Path(d).glob("*.eng")) if Path(d).is_dir() else []:
+            if designation and designation.lower() in f.stem.lower():
+                return f
+    raise FileNotFoundError(f"no .eng file for motor {designation!r}: download it from thrustcurve.org into "
+                            f"data/motors/ or pass motor_file=")
+
+
+def from_config(cfg: dict, base_dir: Path, motor: Motor | None = None, motor_file: str | Path | None = None,
+                **overrides) -> Rocket:
     d = cfg["body"]["diameter"]
     nose = NoseCone(cfg["nose"]["shape"], cfg["nose"]["length"], d, cfg["nose"]["mass"],
                     param=cfg["nose"].get("param"))
@@ -294,13 +315,21 @@ def load(path: str | Path, motor: Motor | None = None, motor_file: str | Path | 
     fin_station = nose.length + body.length - f["root_chord"] - f.get("aft_offset", 0.0)
     fins = FinSet(f["count"], f["root_chord"], f["tip_chord"], f["span"], f["sweep"], f["thickness"], f["mass"],
                   fin_station, d)
-    masses = [PointMass(k, v["mass"], v["station"]) for k, v in cfg.get("mass", {}).items()]
+    masses = [PointMass(k, v["mass"], v["station"], v.get("inertia", 0.0), v.get("roll_inertia", 0.0))
+              for k, v in cfg.get("mass", {}).items()]
+    mcfg = cfg["motor"]
     if motor is None:
-        mf = motor_file or (path.parent / cfg["motor"]["file"])
+        if motor_file:
+            mf = motor_file
+        elif mcfg.get("file"):
+            mf = base_dir / mcfg["file"]
+        else:
+            mf = find_motor(mcfg.get("designation", ""), base_dir, base_dir / "data" / "motors",
+                            base_dir.parent / "data" / "motors", Path.cwd() / "data" / "motors")
         motor = Motor.from_eng(mf)
-    d_exit = cfg["motor"].get("nozzle_exit_diameter", 0.0)
+    d_exit = mcfg.get("nozzle_exit_diameter", 0.0)
     if d_exit and not motor.exit_area:
         motor.exit_area = np.pi * d_exit**2 / 4
-    aft = nose.length + body.length + cfg["motor"].get("overhang", 0.0)
-    return Rocket(cfg.get("name", path.stem), nose, body, fins, masses, motor, aft,
+    aft = mcfg.get("aft_station", nose.length + body.length + mcfg.get("overhang", 0.0))
+    return Rocket(cfg.get("name", "rocket"), nose, body, fins, masses, motor, aft,
                   roughness=cfg.get("roughness", 60e-6), **overrides)

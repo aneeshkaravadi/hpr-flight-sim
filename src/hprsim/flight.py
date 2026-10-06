@@ -20,7 +20,9 @@ diameters, and the peak force while it fills is the opening shock.
 """
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -63,6 +65,17 @@ class Recovery:
     drogue_diameter: float = 0.305  # m, nominal (sets how far it travels while filling)
     main_diameter: float = 1.524  # m
     fill_constant: float = 8.0  # canopy diameters traveled while filling (assumed; varies by canopy type)
+
+    @classmethod
+    def from_file(cls, path) -> Recovery:
+        """The [recovery] table of a rocket TOML file, or the parachutes in an OpenRocket .ork file."""
+        path = Path(path)
+        if path.suffix.lower() == ".ork":
+            from . import ork
+            cfg = ork.read(path)
+        else:
+            cfg = tomllib.loads(path.read_text())
+        return cls(**cfg.get("recovery", {}))
 
 
 @dataclass
