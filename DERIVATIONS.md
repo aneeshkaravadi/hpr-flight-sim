@@ -136,7 +136,15 @@ After apogee the rocket is treated as a point mass hanging under its parachute's
 
 $$v_t = \sqrt{\frac{2mg}{\rho\,C_dA}}$$
 
-(`test_descent_reaches_terminal_velocity_under_main`). Parachute inflation time is ignored.
+(`test_descent_reaches_terminal_velocity_under_main`).
+
+**Opening shock.** A canopy fills over a distance, not instantly. The model assumes its diameter grows linearly with the distance $x$ traveled since deployment, so the drag area grows as $x^2$ and is full after $L = n D_0$, where $n$ is the fill constant. Without gravity, $v\,dv/dx = dv/dt$ turns $m\,dv/dt = -\tfrac12\rho v^2 C_DA\,(x/L)^2$ into
+
+$$\frac{dv}{v} = -\frac{\rho C_DA}{2mL^2}x^2\,dx \quad\Rightarrow\quad v = v_0 e^{-kx^3},\qquad k = \frac{\rho C_DA}{6mL^2}$$
+
+The force $F = \tfrac12\rho v^2 C_DA(x/L)^2 \propto x^2 e^{-2kx^3}$ peaks at $x^* = (3k)^{-1/3}$. If $x^* > L$ (a heavy payload), it peaks at full inflation instead. The test fills a canopy at 30 m/s for a light and a very heavy payload and checks the peak force against this formula (`test_opening_shock_matches_the_closed_form`).
+
+$n$ depends on the canopy type. It is an assumption here (8 by default), which is why the README shows 4 and 12 too.
 
 ## 9. Calibration and Monte Carlo
 
@@ -152,6 +160,6 @@ $$v_t = \sqrt{\frac{2mg}{\rho\,C_dA}}$$
 - Subsonic only. There is no transonic drag rise, and no body lift at higher angles of attack (Galejs).
 - No roll dynamics, fin cant or thrust misalignment.
 - Thrust changes with altitude only if you give the nozzle exit diameter.
-- Parachutes open instantly.
+- Parachute filling is a simple model: drag area grows with distance squared, and the fill constant is an assumption.
 - Wind is a steady power-law profile with no gusts.
 - The example rocket's dimensions are representative of 3-inch kits. They aren't a specific kit.

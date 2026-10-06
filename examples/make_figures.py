@@ -6,7 +6,7 @@
 
 Every simulation goes through hprsim.runner: one progress bar for the whole job,
 lowest CPU priority, and + / - keys to change how many run at once while it goes.
-Sections: thrust, baseline, weathercock, landing, montecarlo, altitude.
+Sections: thrust, baseline, weathercock, landing, montecarlo, altitude, recovery.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ FIG = ROOT / "docs" / "figures"
 RESULTS = ROOT / "docs" / "results.json"
 ROCKET = ROOT / "rockets" / "example_3in.toml"
 MOTORS = {name: ROOT / "data" / "motors" / f"AeroTech_{name}.eng" for name in ("H128W", "I284W", "J420R")}
-SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude")
+SECTIONS = ("thrust", "baseline", "weathercock", "landing", "montecarlo", "altitude", "recovery")
 SITES = (0.0, 500.0, 1000.0, 1500.0, 2000.0)  # launch site elevation, m
 EXITS = (0.0, 0.012, 0.016, 0.020)  # nozzle exit diameter, m (0 = curve as certified)
 WINDS = np.arange(0, 10.1, 1.0)
@@ -107,6 +107,8 @@ def main():
     if "montecarlo" in only:
         jobs["mc_raw"], mc_raw_in = monte_carlo_specs(args.mc, 0.10, seed=1)
         jobs["mc_cal"], mc_cal_in = monte_carlo_specs(args.mc, 0.02, seed=2)
+    if "recovery" in only:
+        jobs["recovery"] = [{"motor": "I284W"}, {"motor": "I284W", "recovery": {"drogue_cda": None, "main_altitude": None}}]
     if "altitude" in only:
         jobs["altitude"] = [{"motor": "I284W", "ascent_only": True, "exit_diameter": d,
                              "launch": {"site_elevation": h}} for h in SITES for d in EXITS]
@@ -265,6 +267,41 @@ def main():
             "apogee_m_as_certified": {f"{h:.0f}": round(float(a), 1) for h, a in zip(SITES, ap[:, 0])},
             "apogee_gain_pct": {f"{1000 * d:.0f}mm": {f"{h:.0f}": round(float(g), 2) for h, g in zip(SITES, gain[:, j])}
                                 for j, d in enumerate(EXITS) if d > 0}}
+
+    # ---- 7. parachute opening loads
+    if "recovery" in only:
+        r = rocket.load(ROCKET, motor=motor.Motor.from_eng(MOTORS["I284W"]))
+        m = r.mass_props(r.motor.burn_time + 1.0)[0]
+        speeds = np.arange(10.0, 90.1, 5.0)
+        dual, apogee_main = res["recovery"][0]["events"], res["recovery"][1]["events"]
+        fig, ax = plt.subplots(figsize=(6.5, 3.9))
+        curves = {}
+        for n in (4.0, 8.0, 12.0):
+            rec = flight.Recovery(drogue_cda=None, main_altitude=None, fill_constant=n)
+            loads = []
+            for V in speeds:  # main fired at 150 m while falling at V
+                ev = {}
+                flight.descend(flight.Launch(), rec, m, 0.0, np.array([0.0, 0.0, 150.0, 0.0, 0.0, -V]), ev, t_end=8.0)
+                loads.append(ev["main_opening_force_N"])
+            curves[n] = np.array(loads)
+            ax.plot(speeds, curves[n], "-" if n == 8.0 else "--", label=f"fills in {n:.0f} canopy diameters")
+        ax.plot([dual["drogue_descent_speed"]], [dual["main_opening_force_N"]], "ko")
+        ax.annotate("dual deploy:\nmain opens under the drogue", (dual["drogue_descent_speed"], dual["main_opening_force_N"]),
+                    textcoords="offset points", xytext=(10, 25), fontsize=8, arrowprops={"arrowstyle": "-", "lw": 0.6})
+        ax.set_xlabel("falling speed when the main opens (m/s)")
+        ax.set_ylabel("peak opening force (N)")
+        sec = ax.secondary_yaxis("right", functions=(lambda f: f / (m * 9.80665), lambda g: g * m * 9.80665))
+        sec.set_ylabel("(g)")
+        ax.set_title(f"60 in main on the {m:.1f} kg rocket: the load grows with the square of the speed", fontsize=10)
+        ax.legend(fontsize=8, loc="upper left")
+        save(fig, "opening_shock.png")
+        results["recovery"] = {
+            "mass_kg": round(float(m), 2),
+            "dual_deploy": {k: round(float(dual[k]), 1) for k in ("drogue_descent_speed", "drogue_opening_force_N",
+                                                                   "main_opening_force_N", "main_opening_g")},
+            "main_at_apogee": {k: round(float(apogee_main[k]), 1) for k in ("main_opening_force_N", "main_opening_g")},
+            "main_force_N_vs_speed": {f"fill_{n:.0f}D": {f"{v:.0f}": round(float(f), 0) for v, f in zip(speeds, c)}
+                                      for n, c in curves.items()}}
 
     RESULTS.write_text(json.dumps(results, indent=2))
     print(f"updated: {', '.join(sorted(only))}  ->  {RESULTS.relative_to(ROOT)}")

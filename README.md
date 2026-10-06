@@ -34,9 +34,13 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 ![Weathercocking](docs/figures/weathercock.png)
 
-**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.4 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 790 m.
+**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.4 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 780 m.
 
 ![Landing dispersion](docs/figures/landing_dispersion.png)
+
+**The drogue also protects the main.** A parachute doesn't open instantly, and the force while it fills grows with the square of the falling speed. Under the drogue the rocket comes down at 25 m/s, so the 60 in main opens with about 110 N (5 g). Opening it at apogee is gentler (34 N), but then the rocket drifts kilometers. If the drogue failed and the main fired at 60 m/s, the load would be about 570 N, five times higher. That's the load the shock cord and its anchors would have to survive. How quickly a canopy fills is an assumption (I use 8 canopy diameters of travel), so the plot shows 4 and 12 too.
+
+<img src="docs/figures/opening_shock.png" width="60%">
 
 **After you calibrate drag, the motor is the biggest unknown.** I ran 300 flights per case with realistic scatter in drag, dry mass, motor impulse (±3%), wind and air temperature.
 - **With my drag model as-is**, the apogee spread is ±88 m (1σ), and 68% of that comes from not knowing the drag well enough.

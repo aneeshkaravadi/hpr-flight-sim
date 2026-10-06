@@ -7,7 +7,7 @@
       "max_mach": 0.22,
       "rail_exit_speed": 16.67,
       "max_accel_g": 8.33,
-      "landing_time": 45.26,
+      "landing_time": 44.09,
       "margin_liftoff_cal": 2.9,
       "margin_burnout_cal": 3.25
     },
@@ -18,7 +18,7 @@
       "max_mach": 0.63,
       "rail_exit_speed": 25.09,
       "max_accel_g": 18.35,
-      "landing_time": 92.22,
+      "landing_time": 91.1,
       "margin_liftoff_cal": 1.97,
       "margin_burnout_cal": 2.82
     },
@@ -29,7 +29,7 @@
       "max_mach": 0.7,
       "rail_exit_speed": 26.89,
       "max_accel_g": 21.6,
-      "landing_time": 94.58,
+      "landing_time": 93.46,
       "margin_liftoff_cal": 1.81,
       "margin_burnout_cal": 2.77
     }
@@ -61,8 +61,8 @@
     }
   },
   "landing_m_at_8ms": {
-    "dual deploy (drogue, main at 150 m)": 791.0,
-    "main at apogee": 3423.0
+    "dual deploy (drogue, main at 150 m)": 776.0,
+    "main at apogee": 3416.0
   },
   "monte_carlo": {
     "n": 300,
@@ -123,6 +123,78 @@
         "1000": 1.51,
         "1500": 2.15,
         "2000": 2.79
+      }
+    }
+  },
+  "recovery": {
+    "mass_kg": 2.15,
+    "dual_deploy": {
+      "drogue_descent_speed": 25.0,
+      "drogue_opening_force_N": 1.4,
+      "main_opening_force_N": 109.1,
+      "main_opening_g": 5.2
+    },
+    "main_at_apogee": {
+      "main_opening_force_N": 34.3,
+      "main_opening_g": 1.6
+    },
+    "main_force_N_vs_speed": {
+      "fill_4D": {
+        "10": 54.0,
+        "15": 82.0,
+        "20": 124.0,
+        "25": 178.0,
+        "30": 244.0,
+        "35": 322.0,
+        "40": 412.0,
+        "45": 514.0,
+        "50": 629.0,
+        "55": 755.0,
+        "60": 894.0,
+        "65": 1044.0,
+        "70": 1207.0,
+        "75": 1382.0,
+        "80": 1568.0,
+        "85": 1767.0,
+        "90": 1978.0
+      },
+      "fill_8D": {
+        "10": 46.0,
+        "15": 63.0,
+        "20": 89.0,
+        "25": 122.0,
+        "30": 164.0,
+        "35": 213.0,
+        "40": 270.0,
+        "45": 334.0,
+        "50": 406.0,
+        "55": 486.0,
+        "60": 573.0,
+        "65": 668.0,
+        "70": 770.0,
+        "75": 880.0,
+        "80": 998.0,
+        "85": 1123.0,
+        "90": 1256.0
+      },
+      "fill_12D": {
+        "10": 43.0,
+        "15": 56.0,
+        "20": 75.0,
+        "25": 100.0,
+        "30": 132.0,
+        "35": 169.0,
+        "40": 212.0,
+        "45": 261.0,
+        "50": 316.0,
+        "55": 377.0,
+        "60": 444.0,
+        "65": 516.0,
+        "70": 594.0,
+        "75": 678.0,
+        "80": 768.0,
+        "85": 864.0,
+        "90": 965.0
       }
     }
   }
