@@ -91,9 +91,13 @@ $$C_{D,f} = C_f\,\frac{\left(1 + \frac{1}{2f_B}\right)S_\text{body} + \left(1 + 
 
 where $f_B$ is the body length-to-diameter ratio, $t$ the fin thickness and $\bar c$ the mean fin chord.
 
-**Base drag** is $C_{D,b} = 0.12 + 0.13M^2$ on the base area. While the motor is firing, the motor's own cross-section is subtracted, because the exhaust fills that part of the base.
+**Base drag** is $C_{D,b} = 0.12 + 0.13M^2$ below Mach 1 and $0.25/M$ above (they meet at 0.25). It acts on the base area. While the motor is firing, the motor's own cross-section is subtracted, because the exhaust fills that part of the base. OpenRocket doesn't do this, so the two differ while the motor burns.
 
-**Fins also carry** a rounded-leading-edge term and a blunt-trailing-edge term (the trailing edge acts like a small base).
+**Skin friction through Mach 1.** Above Mach 1.1 the compressibility correction is $C_f/(1 + 0.15M^2)^{0.58}$ for turbulent flow and $C_{f,r}/(1 + 0.18M^2)$ when roughness-limited, instead of $C_f(1 - 0.1M^2)$. The subsonic and supersonic forms don't meet at Mach 1 (switching there dropped my drag 3% in one step), so from Mach 0.9 to 1.1 the correction is a straight-line blend of the two, as in OpenRocket. For the roughness-limited value it blends their values at Mach 0.9 and 1.1 (`test_skin_friction_blends_through_mach_one`).
+
+**Fin edges** depend on the cross-section. A square leading edge feels the stagnation pressure, $0.85\,q_\text{stag}/q$ with $q_\text{stag}/q = 1 + M^2/4 + M^4/40$ below Mach 1 and $1.84 - 0.76/M^2 + 0.166/M^4 + 0.035/M^6$ above. A rounded one gets $(1 - M^2)^{-0.417} - 1$ below Mach 0.9, $1 - 1.785(M - 0.9)$ up to Mach 1, and $1.214 - 0.502/M^2 + 0.1095/M^4$ above. Either is scaled by $\cos^2\Lambda_\text{LE}$ times the edge area. The trailing edge is a small base: all of it for a square edge, half for a rounded one (my assumption), and none for an airfoil's sharp edge. The pieces of each formula meet where they change (`test_drag_pieces_join_up_across_mach_one`), and the square-edge case is checked by hand (`test_square_fin_edges_by_hand`).
+
+**Not included:** the nose cone's own pressure (wave) drag. It is small below about Mach 0.8 for smooth noses, but on OpenRocket's example, leaving it out puts my drag 1.4% low at Mach 1.00 and 6.8% low by Mach 1.05 (README, "Against OpenRocket").
 
 The example rocket comes out at $C_D \approx 0.5$ around Mach 0.3, which is in the normal range for high-power rockets (`test_example_drag_is_in_the_usual_range`). For a real rocket you then calibrate it against a flight (section 9).
 
@@ -193,7 +197,7 @@ Checked against a design whose masses and positions are worked out by hand (`tes
 
 ## Limitations
 
-- Subsonic only. There is no transonic drag rise.
+- No nose wave drag, so the drag falls behind above Mach 1 (7% low by Mach 1.05 on OpenRocket's example). Normal-force slopes stop changing above Mach 0.8.
 - Fin cant adds no drag in the model, and roll damping comes from the fins only.
 - Thrust changes with altitude only if you give the nozzle exit diameter.
 - Parachute filling is a simple model: drag area grows with distance squared, and the fill constant is an assumption.

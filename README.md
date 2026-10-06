@@ -18,9 +18,9 @@ The example is a typical 3-inch dual-deploy rocket with a 38 mm motor mount, flo
 
 | Motor | Apogee | Max speed | Off the rail | Static margin, liftoff → burnout |
 |---|---|---|---|---|
-| H128W | 280 m | 73 m/s | 16.7 m/s | 2.9 → 3.3 cal |
-| I284W | 1,332 m | 214 m/s (Mach 0.63) | 25.1 m/s | 2.0 → 2.8 cal |
-| J420R | 1,403 m | 238 m/s (Mach 0.70) | 26.9 m/s | 1.8 → 2.8 cal |
+| H128W | 281 m | 73 m/s | 16.7 m/s | 2.9 → 3.3 cal |
+| I284W | 1,344 m | 215 m/s (Mach 0.63) | 25.1 m/s | 2.0 → 2.8 cal |
+| J420R | 1,416 m | 238 m/s (Mach 0.70) | 26.9 m/s | 1.8 → 2.8 cal |
 
 ![Flight profiles](docs/figures/flight_profiles.png)
 
@@ -30,15 +30,15 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 ## What it taught me
 
-**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (1.5 to 2.5% lower at 8 m/s), but the I284W ends up 103 m upwind of the pad at apogee.
+**Wind matters most right off the rail.** A rocket leaving a 6 ft rail at 16.7 m/s in an 8 m/s wind meets the air at a 20.6° angle of attack, so it turns hard into the wind. On the H128W a longer rail only helps a little: 18.7° from an 8 ft rail, against 23.6° from a 4 ft one. The faster I284W leaves the rail at 25 m/s and only sees 14°. Apogee barely changes (1.5 to 2.5% lower at 8 m/s), but the I284W ends up 105 m upwind of the pad at apogee.
 
 ![Weathercocking](docs/figures/weathercock.png)
 
-**A 2-caliber margin is a small-angle number.** Barrowman's method treats normal force as linear in the angle of attack and leaves out the body tube's own lift, which grows as sin²α. That's fine in steady flight, but not for a rocket leaving a short rail in wind at 14 to 21°. With Galejs' body-lift correction, the I284W's 2.0-caliber margin at liftoff drops to 0.6 at 10° and almost nothing at 20°, and on the J420R it goes slightly negative. The body lift acts ahead of the CG, so the simulator, which includes it, also shows the rocket turning into the wind less than plain Barrowman predicts: 103 m upwind at apogee instead of 142 m.
+**A 2-caliber margin is a small-angle number.** Barrowman's method treats normal force as linear in the angle of attack and leaves out the body tube's own lift, which grows as sin²α. That's fine in steady flight, but not for a rocket leaving a short rail in wind at 14 to 21°. With Galejs' body-lift correction, the I284W's 2.0-caliber margin at liftoff drops to 0.6 at 10° and almost nothing at 20°, and on the J420R it goes slightly negative. The body lift acts ahead of the CG, so the simulator, which includes it, also shows the rocket turning into the wind less than plain Barrowman predicts: 105 m upwind at apogee instead of 144 m.
 
 <img src="docs/figures/margin_vs_aoa.png" width="60%">
 
-**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.5 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 825 m.
+**Dual deploy isn't optional on a windy day.** In an 8 m/s wind, opening the main at apogee puts the I284W flight 3.5 km from the pad. Coming down fast under a small drogue and opening the main at 150 m brings that to 830 m.
 
 ![Landing dispersion](docs/figures/landing_dispersion.png)
 
@@ -48,7 +48,7 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 **After you calibrate drag, the motor is the biggest unknown.** I ran 300 flights per case with realistic scatter in drag, dry mass, motor impulse (±3%), wind and air temperature.
 - **With my drag model as-is**, the apogee spread is ±88 m (1σ), and 68% of that comes from not knowing the drag well enough.
-- **After calibrating drag** from one real flight (`examples/compare_flight.py`), the spread drops to ±48 m, and now 68% of what's left is the motor itself: no two reloads give exactly the same impulse, and no amount of calibration fixes that.
+- **After calibrating drag** from one real flight (`examples/compare_flight.py`), the spread drops to ±49 m, and now 69% of what's left is the motor itself: no two reloads give exactly the same impulse, and no amount of calibration fixes that.
 
 ![Monte Carlo](docs/figures/monte_carlo.png)
 
@@ -56,7 +56,7 @@ The stability margin isn't one number. It climbs while the motor burns, because 
 
 <img src="docs/figures/altitude_thrust.png" width="60%">
 
-**Spinning the rocket only partly fixes a crooked motor.** If the thrust line is off the body axis by just 0.25°, from a slightly crooked motor mount, the I284W reaches apogee 190 m from the pad with no wind at all. Canting the fins makes the rocket spin, so the crooked push keeps changing direction and partly cancels out. But spin only builds with speed. With 1° of cant it peaks at 2 rev/s near burnout, and the slow first second off the rail, when the rocket is easiest to push around, gets almost none. So 1° of cant cuts the drift to 135 m and 2° to 115 m, not to zero.
+**Spinning the rocket only partly fixes a crooked motor.** If the thrust line is off the body axis by just 0.25°, from a slightly crooked motor mount, the I284W reaches apogee 193 m from the pad with no wind at all. Canting the fins makes the rocket spin, so the crooked push keeps changing direction and partly cancels out. But spin only builds with speed. With 1° of cant it peaks at 2 rev/s near burnout, and the slow first second off the rail, when the rocket is easiest to push around, gets almost none. So 1° of cant cuts the drift to 136 m and 2° to 115 m, not to zero.
 
 ![Spin](docs/figures/spin.png)
 
@@ -68,13 +68,14 @@ the uncalibrated error and the fitted drag multiplier. Then predict a second fli
 
 ## How I checked it
 
-There are 43 tests, and each compares against something worked out independently:
+There are 46 tests, and each compares against something worked out independently:
 - standard atmosphere tables
 - the published impulse of each motor
 - the rocket equation, with no gravity or drag
 - exact kinematics for a drag-free vertical flight, and the launch-rail exit speed (to 0.2%)
 - Barrowman's nose and fin results, including the quarter-chord CP of a rectangular fin, and the CP of every nose shape from its volume
 - the extra speed from pressure thrust at altitude
+- drag formulas that meet where their pieces change (Mach 0.9, 1 and 1.1), and square fin edges by hand
 - the closed-form opening shock of a filling parachute
 - the steady roll rate of canted fins and how fast it spins up, and the torque from a misaligned thrust line
 - terminal velocity under the main parachute
@@ -89,10 +90,11 @@ OpenRocket saves its simulation results inside each design file, so I imported o
 - **Dry mass:** 1.3608 kg against OpenRocket's 1.3610.
 - **Dry CG:** within 2 mm.
 - **CP:** at 1,335 flight points, mine is within 1 mm of OpenRocket's up to Mach 0.6 (0.66 mm RMS overall). OpenRocket stores positions to the millimeter, so that's as close as the data can show. Above Mach 0.6 the two drift apart by up to 5 mm, where both are stretching subsonic theory.
+- **Drag:** its fins are square-edged, which my first drag model didn't handle, and my drag came out 17% low. Once fins had a cross-section, coasting drag agreed within 0.75% at all 1,164 coasting points below Mach 1, across six flights. Only the J570W flight goes faster, and there mine falls behind: 1.4% low at Mach 1.00 and 6.8% by 1.05. That's the nose cone's own wave drag building up, which I haven't modeled yet.
 
-`examples/compare_openrocket.py` runs the same check on any .ork that has saved simulations.
+`examples/compare_openrocket.py` runs the same checks on any .ork that has saved simulations.
 
-<img src="docs/figures/openrocket_cp.png" width="60%">
+<img src="docs/figures/openrocket_cp.png" width="49%"> <img src="docs/figures/openrocket_drag.png" width="49%">
 
 ## Using it on your own rocket
 
@@ -115,7 +117,7 @@ After a flight, calibrate the drag against the altimeter with `examples/compare_
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                                          # 43 checks, ~15 s
+pytest -q                                          # 46 checks, ~15 s
 python examples/make_figures.py                    # every figure and number above
 python examples/make_figures.py --only weathercock # or just one section
 ```
@@ -129,11 +131,12 @@ python examples/make_figures.py --only weathercock # or just one section
 - **The rail-exit speed came out 1% too high,** because I recorded it at the end of the time step instead of interpolating to the exact moment the rocket left the rail.
 - **My first example rocket had a static margin of 3 to 4 calibers.** It was very stable, but it would weathercock a lot. Smaller fins brought it to about 2.
 - **My fins gained too much lift with speed.** I'd divided the whole fin lift slope by the Prandtl-Glauert factor. When I imported one of OpenRocket's own examples and compared against the CP it had saved, mine sat 8 to 13 mm too far aft above Mach 0.3. Diederich's form, which OpenRocket uses, puts the compressibility inside the aspect-ratio term instead, and now the two agree to within a millimeter. The same comparison caught my nose surface integral overcounting by 0.05%.
+- **My drag dropped 3% in one step at Mach 1.** I switched from the subsonic skin-friction correction to the supersonic one at exactly Mach 1, but the two don't meet there. The comparison plot showed a cliff in my curve right where OpenRocket's kept climbing. OpenRocket blends the two in a straight line from Mach 0.9 to 1.1, and now mine does too.
 - **I originally used the J350W.** Its curve on thrustcurve.org isn't marked public domain, so I switched to the J420R, which is the same case size with a similar impulse.
 
 ## What's next
 
-See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): transonic drag and real flight comparisons.
+See the [issues](https://github.com/aneeshkaravadi/hpr-flight-sim/issues): the nose cone's wave drag near Mach 1, and real flight comparisons.
 
 ---
 

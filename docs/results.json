@@ -1,35 +1,35 @@
 {
   "baseline": {
     "H128W": {
-      "apogee_m": 279.93,
-      "apogee_time": 7.86,
-      "max_speed": 73.44,
+      "apogee_m": 280.61,
+      "apogee_time": 7.87,
+      "max_speed": 73.47,
       "max_mach": 0.22,
       "rail_exit_speed": 16.67,
-      "max_accel_g": 8.33,
-      "landing_time": 44.09,
+      "max_accel_g": 8.34,
+      "landing_time": 44.04,
       "margin_liftoff_cal": 2.9,
       "margin_burnout_cal": 3.25
     },
     "I284W": {
-      "apogee_m": 1332.23,
-      "apogee_time": 15.13,
-      "max_speed": 214.44,
+      "apogee_m": 1343.78,
+      "apogee_time": 15.21,
+      "max_speed": 214.86,
       "max_mach": 0.63,
       "rail_exit_speed": 25.09,
       "max_accel_g": 18.35,
-      "landing_time": 91.1,
+      "landing_time": 91.56,
       "margin_liftoff_cal": 1.97,
       "margin_burnout_cal": 2.82
     },
     "J420R": {
-      "apogee_m": 1402.63,
-      "apogee_time": 15.33,
-      "max_speed": 238.01,
+      "apogee_m": 1415.54,
+      "apogee_time": 15.41,
+      "max_speed": 238.41,
       "max_mach": 0.7,
       "rail_exit_speed": 26.89,
       "max_accel_g": 21.6,
-      "landing_time": 93.47,
+      "landing_time": 93.97,
       "margin_liftoff_cal": 1.81,
       "margin_burnout_cal": 2.77
     }
@@ -43,7 +43,7 @@
     "I284W": {
       "apogee_loss_pct_at_8ms": 1.5,
       "rail_exit_aoa_deg_at_8ms": 14.0,
-      "upwind_apogee_drift_m_at_8ms": 103.0
+      "upwind_apogee_drift_m_at_8ms": 105.0
     }
   },
   "rail_length_H128W_8ms": {
@@ -61,68 +61,68 @@
     }
   },
   "landing_m_at_8ms": {
-    "dual deploy (drogue, main at 150 m)": 825.0,
-    "main at apogee": 3474.0
+    "dual deploy (drogue, main at 150 m)": 829.0,
+    "main at apogee": 3507.0
   },
   "monte_carlo": {
     "n": 300,
     "uncalibrated": {
-      "p5": 1220,
-      "p50": 1334,
-      "p95": 1506,
-      "std": 87.5
+      "p5": 1231,
+      "p50": 1345,
+      "p95": 1520,
+      "std": 88.2
     },
     "drag_calibrated": {
-      "p5": 1244,
-      "p50": 1323,
-      "p95": 1396,
-      "std": 48.2
+      "p5": 1254,
+      "p50": 1334,
+      "p95": 1408,
+      "std": 48.9
     },
     "variance_share_uncalibrated": {
-      "drag": 0.683,
+      "drag": 0.678,
       "dry mass": 0.021,
-      "motor impulse": 0.24,
+      "motor impulse": 0.244,
       "wind speed": 0.005,
-      "air temperature": 0.052
+      "air temperature": 0.051
     },
     "variance_share_calibrated": {
-      "drag": 0.065,
-      "dry mass": 0.054,
-      "motor impulse": 0.683,
+      "drag": 0.064,
+      "dry mass": 0.055,
+      "motor impulse": 0.687,
       "wind speed": 0.017,
-      "air temperature": 0.181
+      "air temperature": 0.177
     },
     "inputs": "drag x N(1, 0.10) [calibrated: 0.02]; dry mass x N(1, 0.02); impulse x N(1, 0.03); wind U(0, 8) m/s from a random direction; temperature ISA + N(0, 8) K"
   },
   "altitude_thrust": {
     "apogee_m_as_certified": {
-      "0": 1320.0,
-      "500": 1350.9,
-      "1000": 1382.4,
-      "1500": 1414.7,
-      "2000": 1447.7
+      "0": 1331.4,
+      "500": 1362.5,
+      "1000": 1394.2,
+      "1500": 1426.7,
+      "2000": 1459.8
     },
     "apogee_gain_pct": {
       "12mm": {
         "0": 0.06,
-        "500": 0.3,
-        "1000": 0.54,
+        "500": 0.31,
+        "1000": 0.55,
         "1500": 0.78,
         "2000": 1.01
       },
       "16mm": {
-        "0": 0.1,
+        "0": 0.11,
         "500": 0.54,
         "1000": 0.97,
-        "1500": 1.38,
-        "2000": 1.79
+        "1500": 1.39,
+        "2000": 1.8
       },
       "20mm": {
-        "0": 0.16,
-        "500": 0.84,
-        "1000": 1.51,
-        "1500": 2.15,
-        "2000": 2.79
+        "0": 0.17,
+        "500": 0.85,
+        "1000": 1.52,
+        "1500": 2.17,
+        "2000": 2.81
       }
     }
   },
@@ -224,39 +224,39 @@
   "spin": {
     "cant_0.0deg": {
       "apogee_drift_m": {
-        "0.1deg": 70.8,
-        "0.25deg": 191.5,
-        "0.5deg": 435.7
+        "0.1deg": 71.5,
+        "0.25deg": 193.4,
+        "0.5deg": 439.9
       },
       "burnout_tilt_deg_at_0.25": 5.63,
       "peak_spin_rev_s": 0.0
     },
     "cant_0.5deg": {
       "apogee_drift_m": {
-        "0.1deg": 57.0,
-        "0.25deg": 155.3,
-        "0.5deg": 360.1
+        "0.1deg": 57.6,
+        "0.25deg": 156.9,
+        "0.5deg": 363.7
       },
       "burnout_tilt_deg_at_0.25": 4.53,
-      "peak_spin_rev_s": 1.01
+      "peak_spin_rev_s": 1.02
     },
     "cant_1.0deg": {
       "apogee_drift_m": {
-        "0.1deg": 50.0,
-        "0.25deg": 134.9,
-        "0.5deg": 308.2
+        "0.1deg": 50.5,
+        "0.25deg": 136.2,
+        "0.5deg": 311.3
       },
-      "burnout_tilt_deg_at_0.25": 3.92,
+      "burnout_tilt_deg_at_0.25": 3.91,
       "peak_spin_rev_s": 2.03
     },
     "cant_2.0deg": {
       "apogee_drift_m": {
-        "0.1deg": 42.5,
-        "0.25deg": 113.5,
-        "0.5deg": 255.4
+        "0.1deg": 42.9,
+        "0.25deg": 114.7,
+        "0.5deg": 258.0
       },
       "burnout_tilt_deg_at_0.25": 3.21,
-      "peak_spin_rev_s": 4.05
+      "peak_spin_rev_s": 4.06
     }
   }
 }
